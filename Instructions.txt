@@ -1,0 +1,188 @@
+How to Use XFC99.EXE
+
+XFC99.EXE is an MS DOS application and as such will not run under Windows 8 or 10.
+It may work ok under Windows 7 but has not been tested.
+It was developed in DOSBOX on Windows 10.
+
+XFC99 is a cross-compiler for Forth written in Forth.It accepts a command string from
+the command line to get started and after that it operates very much like a Forth system since it is one.
+
+This little tutorial will not give you everything you need to know and the documentation for
+the cross-compiler is under development, however the source file "CAMEL99.HSF" gives you
+pretty complete examples of how it works.
+
+The file 9900FAST.HSF shows you how to use the CROSS-ASSEMBLER.
+
+Source code for the system is in the COMPILER directory. You need HSF2012 to re-build it and I am not able
+to release that at this time since it was a commercial Forth system albeit, from another era.
+
+If you need more information on anything you see here email me at brian.fox@foxaudioresearch.ca
+
+================================================================
+XFC99 Commands
+-------------
+
+Name Space Control
+------------------
+XFC99 makes use of the Forth VOCABULARY system allowing a set of name spaces to be searched 
+in various orders.  Commands have been created to set the name space order for different
+types of jobs that we need to do. Below are the Name space control commands:
+
+
+CROSS-ASSEMBLING  
+----------------------------
+  sets the name space to XASSEMBLER and then CROSS-COMPILER word set.
+  It is used when we want to write CODE words in Forth style TMS9900 assembler.
+  The assembler is similar to the TI Assembler syntax but it is RPN of course.
+  See 9900FAST.hsf for examples of how it works.
+  
+
+TARGET-COMPILING
+-----------------------------
+  TARGET-COMPILING tells the system to compile FORTH words into the [TARGET] memory segment.
+  There is a short-form for this command called [TC]
+
+  TARGET-COMPILING sets the 1st name space to a vocabulary called MIRROR.
+
+  Words in MIRROR name space have exactly the same names as words created in the TARGET memory
+  image of the program we are creating but they are used by the CROSS-COMPILER.  The words in the
+  MIRROR vocabulary that are VARIABLES or CONSTANTS can be executed from inside the XFC99 system
+  like Forth words. MIRROR Variables return their address in the TARGET memory address ie: the address
+  they will give you when the program is running on the TI-99.
+
+  MIRROR CONSTANTS will return the value they are set to so you can verify they are correct while
+  debugging.
+
+
+
+CROSS-COMPILING
+----------------------------
+  sets the 1st name space to CROSS-COMPILER, then TARGET words then XASSEMBLER
+  There is a short form for this command called [CC]
+
+  CROSS-COMPILING contains words that are FORTH "compiling" words.  To keep the author sane
+  these "COMPILING" words are re-name with a leading "T".  So the Forth word S" is TS"
+  
+ COMPILE becomes TCOMPILE
+ LITERAL becomes TLITERAL
+ 
+ You can find examples of these words in the source code. 
+ (This is my first cross-compiler so be a little merciful) 
+
+  CROSS-COMPILING also provides you with some utility words like HEX and DECIMAL so you can 
+  change number bases while debugging.  
+  
+  You also have access to handy utilities.
+  WORDS, DUMPL and TSEE.
+  
+============================
+CROSS-COMPILING UTILITIES
+----------------------------
+
+WORDS is the standard Forth command that lets you see the words in current vocabulary.
+
+XFC99 WORDS can take a string parameter and will find all the words that contain that
+string.
+
+Example:  WORDS !  <enter>
+
+          Will find the words ! V!  C! BASE! etc...
+
+If you type:  MIRROR WORDS <enter>
+              You will see all the words in the mirror name space.
+
+If you type  CROSS-COMPILING WORDS <enter>
+             You will see all the CROSS-COMPILER name space words.
+
+
+DUMPL
+-------------------------
+DUMPL is like normal FORTH DUMP word but it needs one extra parameter.
+The INTEL segment is needed to tell DUMPL (dump long) the full address.
+
+The segment where the target program is created is called [TARGET]
+
+Use DUMPL like this:
+
+HEX [TARGET] A000 400 DUMPL <enter>
+
+and you will see  1024 ($400) bytes in the target memory image starting at hex A000.
+
+
+TSEE, the decompiler
+-------------------------
+It is possible to decompile the code you create from withing the XFC99 system by typing
+
+TSEE <forthword>
+
+Where <FORTHWORD> is valid word in the TARGET forth that you have compiled into memory.
+
+
+Directory Location
+------------------
+XFC99 does not care where you place it in the DOS path.
+IT DOES cares about 1 directory name.  LIB
+In the directory where XFC99 resides there can be a directory called \LIB.
+If you place files in \LIB they will be found by XFC99 without you explicitly
+defining the path.
+
+Example:
+
+Let's assume XCF99.EXE is in the path C:\COMPILERS\XFC\
+
+If you were to place the statement INCLUDE MYSTUFF.FTH in a source file, XFC99 will look
+in it's current director (XFC)  and if not found, it will look for XFC\LIB\MYSTUFF.FTH.
+That's as fancy as it gets.
+
+You may prefer to simply put the entire path in your include statements.
+
+
+BUILDING CAMEL99
+-------------------
+To build the binary image file called CAMEL99 do the following
+
+CD to the directory where XFC and the source files are located.
+
+At the DOS command line type:
+
+XFC99 fload CAMLEL99.HSF <enter>
+
+You will then see a long list of text telling you what is loading.
+
+
+SOME CONFIGURATION REQUIRED
+----------------------
+
+Please look at the end of file CAMEL99.HSF
+
+You will find this line of code.
+
+      // copy CAMEL99 cc9900\clssic99\dsk2\
+
+If you want to have XFC99 copy your finish CAMEL99 somewhere you can
+do it with this line.
+
+//  is the command to shell to DOS. Follow it with 1 space minimum and
+then add your legal DOS commands.
+
+
+TO BYE OR NOT TO BYE
+---------------------
+Also notice that the BYE command is commented out.
+If you want to exit XFC99 after the build is completed simply remove the
+backslash on that line.
+
+
+HOW TO EXIT XFC99
+------------------
+If the process stops you will be inside the XFC99 Forth system.
+You can snoop around from there and dump and/or dissaemble the code
+up to the point that it errored out.
+
+OR to exit XFC99 simply type BYE <enter>
+
+and you will be back at the DOS command line.
+
+
+
+
