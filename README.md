@@ -1,3 +1,4 @@
+
 # CAMEL99
 Camel Forth for the TI-99
 This code requires the XFC99 cross compiler that runs in DOSBOX or on MS DOS or a compatible OS.
@@ -18,4 +19,4 @@ This system is a work in progress by a hobbyist so you will no doubt find numero
 Do not hesitate to let me know a brian.fox@foxaudioresearch.ca
 
 * HOW TO BUILD A WORKING CAMEL FORTH FOR TI-99
-To build the CAMEL99 binary program file for TI-99 please see INSTRUCTIONS.TXT file in this repository.
+* To build the CAMEL99 binary program file for TI-99 please see INSTRUCTIONS.TXT file in this repository.
