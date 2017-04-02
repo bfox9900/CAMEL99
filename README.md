@@ -16,3 +16,6 @@ The other files are features you can add the core system to explore the TI-99 or
 This system is a work in progress by a hobbyist so you will no doubt find numerous errors and places for impovement. That is all good.
 
 Do not hesitate to let me know a brian.fox@foxaudioresearch.ca
+
+* HOW TO BUILD A WORKING CAMEL FORTH FOR TI-99
+To build the CAMEL99 binary program file for TI-99 please see INSTRUCTIONS.TXT file in this repository.
