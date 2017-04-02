@@ -1,6 +1,13 @@
 # CAMEL99
 Camel Forth for the TI-99
-This code requires the XFC99 cross compiler that runs in DOSBOX or on MS DOS or a compatible OS.
+-------------------------
+
+The file called CAMEL99 is a binary program file that should load and run on the TI-99 computer with the EDITOR/ASSEMBLER cartridge plugged into the console. 
+Select "Option 5":  "RUN PROGRAM FILE"
+
+At this stage it is NOT a completed system, but a cross-compiler demonstration.
+
+To build this code requires the XFC99 cross compiler that runs in DOSBOX or on MS DOS or a compatible OS found in the COMPILER folder.
 
 The Forth system that is created is 99% true to the original Camel Forth by Brad Rodriguez but it has a few optimizations to better handle the low speed of the TI-99 computer.
 
