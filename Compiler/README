@@ -1,0 +1,12 @@
+# README
+
+This folder contains the source code for XFC99.EXE.  It is here for your reference only. The hope is that the source code will explain
+how this cross compiler was built. The cross-compiler was created with HsForth which is an old commercial system for DOS written by Jim Kalihan of Harvard Softworks. We do not have permission to release the HsForth kernel to allow you to re-build the compiler at this time. 
+
+We are considering re-making the cross-compiler with Gforth so that it accessible by everyone.
+
+You can you use XFC99.EXE as follows.
+At the DOS command line type:
+
+c:\ XFC99 FLOAD CAMEL99.HSF   <enter>
+
