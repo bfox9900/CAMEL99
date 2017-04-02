@@ -176,7 +176,7 @@ backslash on that line.
 HOW TO EXIT XFC99
 ------------------
 If the process stops you will be inside the XFC99 Forth system.
-You can snoop around from there and dump and/or dissaemble the code
+You can snoop around from there and dump and/or disassemble the code
 up to the point that it errored out.
 
 OR to exit XFC99 simply type BYE <enter>
