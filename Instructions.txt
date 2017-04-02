@@ -182,9 +182,17 @@ If the process stops you will be inside the XFC99 Forth system.
 You can snoop around from there and dump and/or disassemble the code
 up to the point that it errored out.
 
-OR to exit XFC99 simply type BYE <enter>
+OR to exit XFC99 simply type FORTH BYE <enter>
 
-and you will be back at the DOS command line.
+You must type FORTH first because when the compiler stops on an error, the cross-compiler
+name space search will look in the TARGET (MIRROR) dictionary first.
+
+IF you just type BYE, Forth will find the TARGET system BYE if it exists and
+you will get the error "Cannot run a TARGET colon definition"
+
+So type FORTH first, then type BYE to exit from XFC99
+
+
 
 
 
