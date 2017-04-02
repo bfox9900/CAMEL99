@@ -1,9 +1,9 @@
 \ =========================================================================
 \ T I - 9 9   C A M E L   F O R T H   P R I M I T I V E S
 
-\ This code, compiled with a cross compiler built on HSF2012
-\ a re-build of HS/Forth for DOS by Brian Fox is
-\ for the TI-99 4/A Home Computer
+\ This code, is compiled with the XFC99 cross compiler built on HSF2012
+\ a re-build of HS/Forth for DOS by Brian Fox
+\ The resulting program file is for the TI-99 4/A Home Computer.
 
 \ Copyright (c) 2017 Brian Fox Ontario Canada
 \ brian.fox@foxaudioresearch.ca
