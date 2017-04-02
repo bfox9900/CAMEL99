@@ -4,19 +4,18 @@ XFC99.EXE is an MS DOS application and as such will not run under Windows 8 or 1
 It may work ok under Windows 7 but has not been tested.
 It was developed in DOSBOX on Windows 10.
 
-XFC99 is a cross-compiler for Forth written in Forth.It accepts a command string from
+XFC99 is a cross-compiler for Forth written in Forth. It accepts a command string from
 the command line to get started and after that it operates very much like a Forth system since it is one.
 
 This little tutorial will not give you everything you need to know and the documentation for
-the cross-compiler is under development, however the source file "CAMEL99.HSF" gives you
-pretty complete examples of how it works.
+the cross-compiler is under development, however the source files in the COMPILER folder are provided to assist you.
 
+The source file called "CAMEL99.HSF" gives you pretty complete examples of how it works for a real project.
 The file 9900FAST.HSF shows you how to use the CROSS-ASSEMBLER.
 
-Source code for the system is in the COMPILER directory. You need HSF2012 to re-build it and I am not able
-to release that at this time since it was a commercial Forth system albeit, from another era.
+You need HSF2012 to re-build the cross-compiler and I am not able to release that at this time since it was a commercial Forth system albeit, from another era.
 
-If you need more information on anything you see here email me at brian.fox@foxaudioresearch.ca
+If you need more information on anything contact me at: " brian dot fox at foxaudioresearch dot ca "
 
 ================================================================
 XFC99 Commands
@@ -24,10 +23,9 @@ XFC99 Commands
 
 Name Space Control
 ------------------
-XFC99 makes use of the Forth VOCABULARY system allowing a set of name spaces to be searched 
-in various orders.  Commands have been created to set the name space order for different
-types of jobs that we need to do. Below are the Name space control commands:
-
+  XFC99 makes use of the Forth VOCABULARY system allowing a set of name spaces to be searched 
+  in various orders.  Commands have been created to set the name space order for different
+  types of jobs that we need to do. Below are the Name space control commands:
 
 CROSS-ASSEMBLING  
 ----------------------------
@@ -53,21 +51,18 @@ TARGET-COMPILING
   MIRROR CONSTANTS will return the value they are set to so you can verify they are correct while
   debugging.
 
-
-
 CROSS-COMPILING
 ----------------------------
-  sets the 1st name space to CROSS-COMPILER, then TARGET words then XASSEMBLER
-  There is a short form for this command called [CC]
+  sets the 1st name space to CROSS-COMPILER, then TARGET words then XASSEMBLER  There is a short form for this command called [CC]
 
   CROSS-COMPILING contains words that are FORTH "compiling" words.  To keep the author sane
   these "COMPILING" words are re-name with a leading "T".  So the Forth word S" is TS"
   
- COMPILE becomes TCOMPILE
- LITERAL becomes TLITERAL
+  COMPILE becomes TCOMPILE
+  LITERAL becomes TLITERAL
  
- You can find examples of these words in the source code. 
- (This is my first cross-compiler so be a little merciful) 
+  You can find examples of these words in the source code. 
+  (This is my first cross-compiler so be a little merciful) 
 
   CROSS-COMPILING also provides you with some utility words like HEX and DECIMAL so you can 
   change number bases while debugging.  
@@ -93,25 +88,33 @@ If you type:  MIRROR WORDS <enter>
 
 If you type  CROSS-COMPILING WORDS <enter>
              You will see all the CROSS-COMPILER name space words.
+             
+TWORDS
+------------------------
+TWORDS is a special command that reads the TARGET system's dictionary of words
+directly from the TARGET memory segment in your PC.  If TWORDS works correctly
+it means your TARGET Forth dictionary is correct.
+
+TWORDS does not allow you to search for specific strings in the TARGET dictionary.
 
 
-DUMPL
+TDUMP
 -------------------------
-DUMPL is like normal FORTH DUMP word but it needs one extra parameter.
-The INTEL segment is needed to tell DUMPL (dump long) the full address.
+TDUMP is like normal FORTH DUMP word but it only dumps data from the intel
+segment where the TARGET image is held in your PC.
 
-The segment where the target program is created is called [TARGET]
+(You don't need this but the segment where the target program is created is called [TARGET]
 
-Use DUMPL like this:
+Use TDUMP like this:
 
-HEX [TARGET] A000 400 DUMPL <enter>
+HEX A000 400 TDUMP <enter>
 
 and you will see  1024 ($400) bytes in the target memory image starting at hex A000.
 
 
 TSEE, the decompiler
 -------------------------
-It is possible to decompile the code you create from withing the XFC99 system by typing
+It is possible to decompile the code you create from within the XFC99 system by typing
 
 TSEE <forthword>
 
@@ -131,7 +134,7 @@ Example:
 Let's assume XCF99.EXE is in the path C:\COMPILERS\XFC\
 
 If you were to place the statement INCLUDE MYSTUFF.FTH in a source file, XFC99 will look
-in it's current director (XFC)  and if not found, it will look for XFC\LIB\MYSTUFF.FTH.
+in it's current directory (XFC)  and if not found, it will look for XFC\LIB\MYSTUFF.FTH.
 That's as fancy as it gets.
 
 You may prefer to simply put the entire path in your include statements.
