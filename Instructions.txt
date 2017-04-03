@@ -8,12 +8,14 @@ XFC99 is a cross-compiler for Forth written in Forth. It accepts a command strin
 the command line to get started and after that it operates very much like a Forth system since it is one.
 
 This little tutorial will not give you everything you need to know and the documentation for
-the cross-compiler is under development, however the source files in the COMPILER folder are provided to assist you.
+the cross-compiler is under development, however the source files in the COMPILER folder are provided
+to assist you.
 
 The source file called "CAMEL99.HSF" gives you pretty complete examples of how it works for a real project.
 The file 9900FAST.HSF shows you how to use the CROSS-ASSEMBLER.
 
-You need HSF2012 to re-build the cross-compiler and I am not able to release that at this time since it was a commercial Forth system albeit, from another era.
+You need HSF2012 to re-build the cross-compiler and I am not able to release that at this time since it was
+a commercial Forth system albeit, from another era.
 
 If you need more information on anything contact me at: " brian dot fox at foxaudioresearch dot ca "
 
@@ -53,7 +55,8 @@ TARGET-COMPILING
 
 CROSS-COMPILING
 ----------------------------
-  sets the 1st name space to CROSS-COMPILER, then TARGET words then XASSEMBLER  There is a short form for this command called [CC]
+  sets the 1st name space to CROSS-COMPILER, then TARGET words then XASSEMBLER  There is a short form
+  for this command called [CC]
 
   CROSS-COMPILING contains words that are FORTH "compiling" words.  To keep the author sane
   these "COMPILING" words are re-name with a leading "T".  So the Forth word S" is TS"
