@@ -320,14 +320,15 @@ variable: BOOT                     \ ADDRESS OF THE FIRST Forth word to run
  _C/SCR constant: C/SCR                     \ chars per screen >300 or 3C0
         variable: VMODE                     \ keeps track of the video mode we are in
 
-    018 constant: L/SCR                     \ 24 lines per screen on a TI-99
-    380 constant: CTAB                      \ VDP address of the colour table (HEX)
-
+   0018 constant: L/SCR                     \ 24 lines per screen on a TI-99
+   0380 constant: CTAB                      \ VDP address of the colour table(HEX)
+   0800 constant: PDT                       \ VDP address of "pattern descriptor table"
         variable: VTOP                      \ top of video screen memory. defaults to 0
         variable: VBOTM                     \ "bottom" VDP row address for current MODE (HEX 300 or 3C0)
 
 \ TI-99 keyboard control memory locations
- _CURSR constant: curs                      \ holds CURSOR character for KEY
+\ *ATTENTION* these constants define memory locations so they are actually VARIABLES :-)
+ _CURSR constant: CURS                      \ holds CURSOR character for KEY
    8374 constant: MODE                      \ sets the KSCAN mode. TI docs. CALL KEY( ) for details.
    8375 constant: KVAL                      \ GPL KSCAN outputs ascii value here. >FF if no key pressed
    83D4 constant: KTP                       \ copy of VDP R1. TI-99 system stores the keyboard type here
@@ -380,10 +381,11 @@ TARGET-COMPILING
 [UNDEFINED] 2DROP [IF] : 2DROP ( w w  -- ) DROP DROP ;                           [THEN]
 [UNDEFINED] 2DUP  [IF] : 2DUP  ( w1 w2 -- w1 w2 w1 w2 ) OVER OVER  ;             [THEN]
 
-[UNDEFINED] 2>R   [IF] : 2>R    ( w w --)            >R >R ;                     [THEN] \ 2x bigger in ASSEMBLER
-[UNDEFINED] 2R>   [IF] : 2R>    ( -- w w )           R> R> ;                     [THEN] \ 2x bigger in ASSEMBLER
-[UNDEFINED] 2OVER [IF] : 2OVER  ( d d2 - d d2 d)     2>R 2DUP  2R> 2SWAP ;       [THEN] \ 2x bigger in ASSEMBLER
-[UNDEFINED] 2ROT  [IF] : 2ROT   ( d d2 d3 - d2 d3 d) 2R> 2SWAP 2R> 2SWAP ;       [THEN]
+\ : 2>R    ( w w --)  >R >R ;                      \ 2x bigger in ASSEMBLER
+\ : 2R>    ( -- w w ) R> R> ;                     \ 2x bigger in ASSEMBLER
+
+\ [UNDEFINED] 2OVER [IF] : 2OVER  ( d d2 - d d2 d)     2>R 2DUP  2R> 2SWAP ;       [THEN] \ 2x bigger in ASSEMBLER
+\ [UNDEFINED] 2ROT  [IF] : 2ROT   ( d d2 d3 - d2 d3 d) 2R> 2SWAP 2R> 2SWAP ;       [THEN]
 \ [UNDEFINED] BOUNDS [IF] : BOUNDS  ( adr n -- adr2 adr1 ) OVER + SWAP ;           [THEN]
 
 \ ========================================================================
@@ -774,9 +776,9 @@ TARGET-COMPILING
 
 : EVALUATE     ( c-addr u -- j*x)                             \ interpret a stack string
                SOURCE-ID ON                                   \ ANS standard says to set SOURCE-ID to true
-               SOURCE 2>R  >IN @ >R                           \ save the source & >IN on the return stack
+               SOURCE >R >R  >IN @ >R                           \ save the source & >IN on the return stack
                INTERPRET                                      \ interpret the new string
-               R> >IN !  2R> 'SOURCE 2!                       \ restore source & >IN
+               R> >IN !  R> R> 'SOURCE 2!                       \ restore source & >IN
                SOURCE-ID OFF ;
 
 \ ========================================================================
@@ -936,7 +938,7 @@ TARGET-COMPILING
 \ ========================================================================
 \ ADD-ONS
  [CC] include cc9900\TOOLS.HSF
- [CC] include cc9900\tifile\filesys.hsf
+\  [CC] include cc9900\tifile\filesys.hsf
 \ [CC] include cc9900\ticktock.hsf          \ TMS9901 timer interface
 \ [CC] include cc9900\tms9919.hsf
 \ [CC] include CC9900\99DUMP.HSF
@@ -967,7 +969,7 @@ TARGET-COMPILING
 : AGAIN    1 ?PAIRS COMPILE BRANCH <BACK ;                  XIMMEDIATE
 : BEGIN    ?COMP HERE  1  ;                                 XIMMEDIATE
 : WHILE    T[COMPILE] IF  2+  ;                             XIMMEDIATE
-: REPEAT   2>R T[COMPILE] AGAIN 2R> 2- T[COMPILE] THEN ;    XIMMEDIATE
+: REPEAT   >R >R T[COMPILE] AGAIN R> R> 2- T[COMPILE] THEN ;    XIMMEDIATE
 : UNTIL    1 ?PAIRS COMPILE ?BRANCH <BACK ; XIMMEDIATE
 
 \ ========================================================================
