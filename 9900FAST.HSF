@@ -1,9 +1,9 @@
 \ =========================================================================
 \ T I - 9 9   C A M E L   F O R T H   P R I M I T I V E S
 
-\ This code, is compiled with the XFC99 cross compiler built on HSF2012
-\ a re-build of HS/Forth for DOS by Brian Fox
-\ The resulting program file is for the TI-99 4/A Home Computer.
+\ This code, compiled with a cross compiler built on HSF2012
+\ a re-build of HS/Forth for DOS by Brian Fox is
+\ for the TI-99 4/A Home Computer
 
 \ Copyright (c) 2017 Brian Fox Ontario Canada
 \ brian.fox@foxaudioresearch.ca
@@ -936,18 +936,21 @@ cr .( SKIP SCAN /STRING S= )
 \ ; of WORD and FIND, they closely follow the string operations
 \ ; available on many CPUs, and so are easy to implement and fast.
 
+\ used CAMEL Forth MSP430 as reference code
+
 CODE: SKIP  ( c-addr u char -- c-addr' u')    \ skip matching chars
               TOS SWPB,                       \ fix this silly byte order. It took me hrs to realize this !@#$!
              *SP+ R1 MOV,                     \ POP count into R1, char is already in TOS
              *SP  W  MOV,                     \ get address, but leave space on stack
               R1  R1 MOV,                     \ compares R1 to zero
               @@3 JEQ,                        \ if true get out
-@@1:          TOS *W CMPB,                    \ does character match?
+@@1:          TOS *W+ CMPB,                   \ does character match? &  auto-incr. address
               @@2 JNE,                        \ no, so we are done
-              W INC,                          \ else advance to next char
               R1 DEC,                         \ decr loop counter
               @@1 JNE,                        \ try again
-@@2: @@3:     W *SP  MOV,                     \ store updated address on stack
+@@2:          W DEC,                          \ correct result address after auto-inc.
+
+@@3:          W *SP  MOV,                     \ store updated address on stack
               R1 TOS MOV,                     \ updated count to TOS
               NEXT,
               END-CODE
@@ -958,7 +961,7 @@ CODE: SCAN   ( adr len char -- adr' len' )    \ find matching char
              *SP  W  MOV,                     \ get address, but leave space on stack
               R1  R1 MOV,
               @@3 JEQ,
-@@1:         *W TOS CMPB,                     \ does character match? & auto-inc W to next char
+@@1:          TOS *W CMPB,                    \ does character match?
               @@2 JEQ,                        \ YES, so we are done
               W INC,
               R1 DEC,
@@ -1093,11 +1096,10 @@ CODE: (FIND) ( Caddr NFA -- XT ? )
              *R3 R0 MOVB,                      \ read contents of the immediate field
               @@9 JEQ,                         \ IF it's zero we're done
               TOS NEG,                         \ else if non zero negate the TOS from -1 to 1
-              @@8 JMP,                         \ then exit the routine
+                                               \ and head for home
 
 \ bug in my forward jumps, needs multiple labels (assembler *TODO list)
-@@7: @@8: @@9:
-              R2 *SP MOV,                      \ replace Caddr with the found XT
+@@7: @@9:     R2 *SP MOV,                      \ replace Caddr with the found XT
               NEXT,                            \ Return to Forth
               END-CODE                         \ 44 BYTES
 
