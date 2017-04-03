@@ -346,8 +346,8 @@ TARGET-COMPILING
 : ,         ( n --)    HERE !     2 ALLOT ;
 : C,        ( c --)    HERE C!    1 ALLOT ;
 
-: #PAD      ( -- addr) HERE 10 + ;          \ space for number formatting (16 bytes) GROWS DOWNWARD
-: PAD       ( -- addr) HERE 12 + ;          \ general purpose buffer in un-allocated space grows UPWARD
+: #PAD      ( -- addr) HERE 22 + ;          \ space for number formatting (worst case: 32 digits & minus sign) GROWS DOWNWARD
+: PAD       ( -- addr) HERE 24 + ;          \ general purpose buffer in un-allocated space grows UPWARD
                                             \ CODE: PAD TOS PUSH, DP @@ TOS MOV, TOS 12 ADDI, NEXT, END-CODE
 
 \ : COMPILE,  ( n --)  ,  ;                 \ for ITC Forth this is the same as , (comma compiler)
@@ -651,7 +651,7 @@ TARGET-COMPILING
 \ : SPACES      ( n -- ) 0 ?DO  SPACE  LOOP ;  \ not needed for KERNEL
 
 : PAGE        ( -- )                           \ Forth's word for TI-Basic's "CALL CLEAR"
-              TOP @ C/SCR @ BL VFILL           \ fill VDP memory from address 0 with blanks
+             VTOP @ C/SCR @ BL VFILL           \ fill VDP memory from address 0 with blanks
               0 0 AT-XY ;                      \ home the cursor to top of screen
 
 \ ========================================================================
@@ -680,7 +680,7 @@ TARGET-COMPILING
 
 : KEYBRD     ( n -- )                          \ equivalent to "key unit" value in CALL KEY in TI BASIC
               MODE C!                          \ See "User Reference Guide" KEY Subprogram, CALL KEY, page II-87
-              key? drop ;                      \ CALL KSCAN 1 time to make it happen
+              KEY? DROP ;                      \ CALL KSCAN 1 time to make it happen
 
 : KEY        ( -- char)                        \ simple non-repeating KEY
               BEGIN
@@ -707,8 +707,6 @@ TARGET-COMPILING
                 THEN
               REPEAT
               DROP NIP SWAP -  ;
-\              DUP 0> IF CR THEN  ;             \ added this to make PASTE look nicer in Classic99 emulator
-
 
 [cc] cr ." Number printing"
 \ ======================================================================
