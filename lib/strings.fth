@@ -59,7 +59,7 @@ DECIMAL
 : VAL$     ( adr$ - # ) ?NUMBER 0= ABORT" VAL$ can't convert"  ;
 : CHR$     ( ascii# -- top$ ) NEW: TOP$ 1 OVER C! 1+ C! ;
 
-( concatenate 2 strings USAGE: A$ B$  C$ PUT )
+( concatenate 2 strings USAGE: A$ B$ ADD$ C$ PUT )
 : ADD$       ( $1 $2 -- top$) SWAP PUSH$  COUNT TOP$ APPEND TOP$ ;
 
 : COMPARE$   ( $1 $2 -- flag)  OVER LEN 1+ S= ;
@@ -105,11 +105,12 @@ DECIMAL
  VARIABLE A$  80 DIM
  VARIABLE B$  90 DIM
  VARIABLE C$ 200 DIM
- S" THIS IS STRING A$" A$ PLACE
- S" LOOK FOR THE * IN THIS ONE" B$ PLACE
- A$ =" This will replace the other content."
+ C" THIS IS STRING A$" A$ PUT
+ C" LOOK FOR THE * IN THIS ONE" B$ PUT
+ C$ =" This is the contents of the string called C$."
 
- B$ C$ PUT
+ B$ CHAR * CPOS$ LEFT$ PRINT
+ B$ CHAR * CPOS$ RIGHT$ PRINT
 
 
 
