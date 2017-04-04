@@ -18,8 +18,6 @@ HEX
 ( =============================================================
 ( H E L P E R   W O R D S )
 
- 0800 CONSTANT PDT           ( VDP address of "pattern descriptor table")
-
 ( value checking words. They ABORT to Forth with a msg if input is bad)
 : ?MODE  ( n -- ) VMODE @ <> ABORT" Video mode" ;
 : ?COLOR ( n -- n ) DUP 0 10 WITHIN 0= ABORT" color #" ;
@@ -34,6 +32,8 @@ HEX
 
 : >VPOS ( row col -- VPOS)  C/L @ * +  ;  ( calc VDP address from row & col)
 
+( HEX" converts a string into HEX numbers and returns to DECIMAL radix)
+: HEX"  ( -- <text>)  HEX [CHAR] " PARSE EVALUATE DECIMAL   ;
 
 ( NOT IN TI-BASIC: Changes to familiar CYAN screen)
 : GRAPHICS  ( -- )
@@ -71,6 +71,8 @@ HEX
 
 
 ( CHAR sub-program is renamed to CHARDEF)
+( USAGE: HEX" 7C7C 7C7C 7C7C 7C00" 30 CHARDEF )
+
 : CHARDEF  ( FFFF FFFF FFFF FFFF char# --)
          3 LSHIFT PDT + >R   ( calc address of char# and push. 3 lshift is 4X faster than 8 * )
          R@ 6 + V!           ( nums come off stack in reverse order, so store last ones 1st)
