@@ -282,7 +282,7 @@ TIBSIZE  constant: TIBLEN                   \ bytes in terminal input buffer
 \ S Y S T E M / U S E R   V A R I A B L E S
 \ CAMEL99 uses space after workspace for user vars.
 \ USER 0..1F are CPU workspace registers in CAMEL99
-\ User variables begina at >8320 for primary Forth task
+\ User variables begin at >8320 for the primary Forth task
 
       20 USER: TFLAG               \ TASK flag awake/asleep status
       22 USER: RUN                 \ Forth word that runs in a task
@@ -632,13 +632,13 @@ TARGET-COMPILING
               VCOL @ C/L @ =                   \ are we at end of line?
               IF (CR) THEN  ;                  \ do carriage return math
 
-0 [IF]                                        \ choose normal or faster with -1 or 0
+-1 [IF]                                        \ choose normal or faster with -1 or 0
 
 : TYPE        ( adr cnt --)                    \ normal version of TYPE calls EMIT. Can be vectored
               OVER + SWAP  ?DO  I C@ EMIT  LOOP ; \ 18 BYTES
 
 [ELSE]
-\ not vectorable at this time
+\ FAST TYPE: not vectorable at this time. 30% faster
 : TYPE        ( adr cnt -- )                   \ Video TYPE uses VWRITE. 20% faster, complicated, 58 BYTES
               DUP >r                           \ make copy of cnt
               VPOS + C/SCR @ >                 \ add cnt to VPOS to see if we will go past the screen
@@ -796,7 +796,7 @@ TARGET-COMPILING
 : ABORT       ( -- ) HONK SP0 SP! ( ?CLOSE) CR QUIT ;
 : ?PAIRS      ( n1 n2 --)      - IF CR T." un-paired"   ABORT THEN ;
 : ?COMP       ( -- ) STATE @ 0=  IF CR T." Compile only" ABORT THEN ;
-: ?INTR       ( -- ) STATE @     IF T." interpret only" ABORT THEN ;
+: ?EXEC       ( -- ) STATE @     IF T." interpret only" ABORT THEN ;
 : ?CSP        ( -- ) SP@ CSP @ - IF CR T." Unfinished"   ABORT THEN ;
 : ?STACK      ( -- ) SP0 2- SP@ U< IF CR T." Empty stack"  ABORT THEN ;
 : ?ERR        ( cddr u -- ) CR SPACE TYPE  T[CHAR] ? EMIT  ABORT ;
@@ -855,7 +855,7 @@ TARGET-COMPILING
 \ ========================================================================
 \ T E X T   O U T P U T
 
-: .(          ( <text> -- ) ?INTR  T[CHAR] ) PARSE TYPE ; XIMMEDIATE
+: .(          ( <text> -- ) ?EXEC  T[CHAR] ) PARSE TYPE ; XIMMEDIATE
 
 : ."          ( <text> -- ) ?COMP COMPILE (.")  ,"  ; XIMMEDIATE
 
