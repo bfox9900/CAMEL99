@@ -987,7 +987,7 @@ CODE: /STRING ( c-addr1 u1 n -- c-addr2 u2 )                \ Clks
 \ adapted from Camel Forth MSP430.
 \ TMS9900 does not have a SUBC instruction. I could not figure out how to do
 \ the clever SUB with carry trick that Brad used on MSP430 so Old fashioned
-\ jumps had to suffuce.
+\ jumps had to suffice.
 -1 [IF]
 
 CODE: S=  ( C-addr1 C-addr2 cnt1+1 -- n )      \ COMPARE COUNTED STRINGS (1st byte is the length)
@@ -1012,7 +1012,7 @@ CODE: S=  ( C-addr1 C-addr2 cnt1+1 -- n )      \ COMPARE COUNTED STRINGS (1st by
 
 @@5:          TOS DEC,                         \ R1<R2 set to 1
 @@6:          NEXT,                            \ Return to Forth
-              END-CODE      \ 40 BYTES
+              END-CODE                         \ 30 BYTES
 [THEN]
 
 
@@ -1082,7 +1082,7 @@ CODE: (FIND) ( Caddr NFA -- XT ? )
               @@1 JNE,                         \ if <> 0 let's try the next word in the dictionary!
               NEXT,                            \ we got zero. End of the list! Go back to Forth
 \ Outer loop ends
-\ convert NFA in R3 to CFA in R2
+\ convert NFA in R3 to CFA -> R2
 @@6:          R3 R2 MOV,                       \ if found R3 has a name field address (NFA), copy ro R2
              *R3 R0 MOVB,                      \ get the length of the name to R0
               R0 SWPB,                         \ fix the #$%!@$ byte order again
@@ -1099,15 +1099,17 @@ CODE: (FIND) ( Caddr NFA -- XT ? )
                                                \ and head for home
 
 \ bug in my forward jumps, needs multiple labels (assembler *TODO list)
-@@7: @@9:     R2 *SP MOV,                      \ replace Caddr with the found XT
+@@7: @@9:     R2 *SP MOV,                      \ replace Caddr with the found XT in R2
               NEXT,                            \ Return to Forth
-              END-CODE                         \ 44 BYTES
+              END-CODE                         \ 42 BYTES
 
 \ =======================================================================
 CR ." V D P  C H I P  I N T E R F A C E"
-\ I took a Forth approach to naming VDP memory routines.
+\ We took a Forth approach to naming VDP memory routines.
 \ So VSBR becomes VC@  and VSBW becomes VC!.
 \ VMBW and VMBR become VWRITE AND VREAD.
+\ We also added a new one V! and V@ then load and store 16 bit numbers to VDP
+
 \ And I embraced the Forth paradigm so these routines are created as
 \ Forth words. This gives us the freedom to call these fast routines
 \ with stack based parameter passing, directly from Forth.
