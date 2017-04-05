@@ -2,7 +2,7 @@
 ( simple code for ALLOCATE FREE RESIZE)
 ( Operates similiar to Forth dictionary)
 
-( Apr 5 2017  complete re-think  426 bytes)
+( Apr 5 2017  complete re-think )
 
 ( *SET* these CONSTANTs to your heap memory)
 HEX
@@ -18,8 +18,6 @@ VARIABLE LSTNODE  ( retains last allocated node address)
 
 : NLINK       ( node -- addr) 2-  ;
 : NSIZE       ( node -- addr) 4 - ;
-
-: LSTSIZE     ( -- n )   ;
 
 : INIT-HEAP   ( - )
               HEAP 1000 FF FILL ( for debugging)
