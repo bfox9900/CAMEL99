@@ -1,43 +1,59 @@
 ( CAMEL99 TINY HEAP    Apr 4 2017 BJF )
 ( simple code for ALLOCATE FREE RESIZE)
+( Operates similiar to Forth dictionary)
 
-HEX                       ( *set* these to your heap)
-2000 CONSTANT HEAP        ( using 4k space in Low MEM)
+( Apr 5 2017  complete re-think  426 bytes)
+
+( *SET* these CONSTANTs to your heap memory)
+HEX
+2000 CONSTANT HEAP   ( using 4k space in Low MEM)
 3000 CONSTANT HEND
 
-VARIABLE AP               ( "allocation pointer)
+VARIABLE AP       ( allocation pointer)
+VARIABLE LSTNODE  ( retains last allocated node address)
 
 : HHERE       ( - ADR) HEAP AP @ + ;   ( next free HEAP address)
 : HALLOT      ( N - )  AP +! ;
 : H,          ( N - )  HHERE ! 2 HALLOT ;
 
-: nlink       ( node -- addr) 2-  ;
-: nsize       ( node -- n   ) 4 - ;
+: NLINK       ( node -- addr) 2-  ;
+: NSIZE       ( node -- addr) 4 - ;
 
-: LSTNODE     ( -- addr )  HHERE nlink @ ;
-: LSTSIZE     ( -- n )     HHERE nsize @ ;
+: LSTSIZE     ( -- n )   ;
 
-: INIT-HEAP   ( - )   0 AP !  0 H,  HEAP H,  ;
-: HFITS?      ( n - )   HHERE + HEND < ;
+: INIT-HEAP   ( - )
+              HEAP 1000 FF FILL ( for debugging)
+              0 AP !
+              0 H,
+              HEAP H,
+              HHERE LSTNODE ! ;
+
+: HFITS?      ( n - ) HHERE + HEND < ;
 
 : (ALLOC)     ( n -- addr ?)
-              HHERE DUP >R        (  HHERE is start of the new node, push a copy)
-              OVER HALLOT         ( -- n node-start)
-              SWAP H, 2- H,       ( compile the size, then the link)
-              R> -1 ;             ( return the addr and true)
+              DUP H,
+              LSTNODE @ H,
+              HHERE DUP LSTNODE !
+              SWAP HALLOT
+              -1 ;
 
-: ALLOCATE    ( N -- ADDR  ?)
-              DUP HFITS? IF (ALLOC)  ELSE  HHERE 0  THEN ;
+: ALLOCATE ( N -- addr ?)
+            DUP HFITS?
+            IF   (ALLOC)
+            ELSE  HHERE 0
+            THEN ;
 
-: FREE      ( -- ?)  ( NON-standard. Only frees last node)
-             LSTSIZE CELL+ NEGATE AP +!
-             -1 ;
+: ?NODE    ( node -- ) LSTNODE @ <> ABORT" Not last node" ;
 
-: RESIZE    ( n node -- ?)
-            DUP 2- LSTNODE <> ABORT" Can't resize"
+: FREE     ( node -- ?)  ( NON-standard. Only frees last node)
+            ?NODE
+            LSTNODE @ NSIZE @ 4 + NEGATE HALLOT  -1 ;
+
+: RESIZE   ( n node -- ?)
+            DUP ?NODE
             OVER HFITS?
-            IF  2DUP nsize @ - HALLOT  ( allot the difference from old * new size)
-                nsize !                ( update node size field)
+            IF  2DUP NSIZE @ - HALLOT  ( allot the difference from old * new size)
+                NSIZE !                ( update node size field)
                 -1
 
             ELSE  0
@@ -52,14 +68,18 @@ INIT-HEAP
   2 MALLOC CONSTANT Y
   2 MALLOC CONSTANT Z
  50 MALLOC CONSTANT A$ ( strings)
-400 MALLOC CONSTANT FILEBUF1
 
-S" Now is the time for all good men to come to the aid of their country." A$ PLACE
 99 X !
 66 Y !
-77 X !
+77 Z !
+
+X ?
+X NSIZE ?
+A$ NSIZE ?
 
 : PRINT ( string -- ) COUNT  CR TYPE ;
+
+S" Now is the time for all good men to come to the aid of their country." A$ PLACE
 
 PAGE A$ PRINT
 
