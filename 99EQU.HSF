@@ -1,6 +1,8 @@
 \ ti-99 sepcific equates
 
-\ keeping EQUates in the cross-compiler vocabulary keeps accessible to Xassembler and TARGET
+\ keeping EQUates in the cross-compiler vocabulary makes them accessible to 
+\ Xassembler and TARGET vocabularies because of the search order that is
+\ setup by the CROSS-ASSEMBLING and TARGET-COMPILING directives
 
  CROSS-COMPILING
 
