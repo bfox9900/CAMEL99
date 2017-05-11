@@ -2,18 +2,32 @@
 Camel Forth for the TI-99
 -------------------------
 
-The file called CAMEL99 is a binary program file that should load and run on the TI-99 computer with the EDITOR/ASSEMBLER cartridge plugged into the console. 
+The file called CAMEL99 is a binary program file that should load and run on the TI-99 computer with the EDITOR/ASSEMBLER cartridge plugged into the console. The Forth system that is created is mostly true to the original Camel Forth by Brad Rodriguez but it has a few optimizations to better handle the low speed of the TI-99 computer.  Mostly notably the dictionary search has been re-written in Assembler and is called (FIND).
+26
+(See: 9900FAST.HSF)
+
 Select "Option 5":  "RUN PROGRAM FILE"
 
 At this stage it is NOT a completed system, but a cross-compiler demonstration.
 Files in the LIB\ folder with the extension .FTH  can be pasted into the CLASSIC99 Emulator and they will compile and extend the system.
 
-Files with the extension .HSF can only be compiled by the XFC99 cross-compiler.
+ABOUT CAMEL99
+-------------
+The final CAMEL99 Forth has been built for users of TI BASIC who want to explore Forth. With that in mind it has a string package that provides many of the features of BASIC including the use of a string stack and automated stack management. See the source file STRINGS.HSF to see the functions available and the comments at the bottom of the file provide some example code.  
 
+Graphics Support:
+The existing version of CAMEL99 also includes the GRAFIX99.HSF source code which provides common features of TI BASIC that relate the TI-99 display chip, the TMS9918.  Together these two extensions make a Forth system that is more familiar to the TI BASIC programmer.
+
+NOTE: Files with the extension .HSF can only be compiled by the XFC99 cross-compiler. See the LIB folder for examples of CODE that will compile on CAMEL99.
+
+BUILDING CAMEL99
+----------------
 To build this code requires the XFC99 cross compiler that runs in DOSBOX or on MS DOS or a compatible OS found in the COMPILER folder.
 
-The Forth system that is created is 99% true to the original Camel Forth by Brad Rodriguez but it has a few optimizations to better handle the low speed of the TI-99 computer.
+* To build the CAMEL99 binary program file for TI-99 please see INSTRUCTIONS.TXT file in this repository.
 
+SOURCE CODE OVERVIEW
+-----------------------
 Their are two primary source code files. 
 This first file is 9900FAST.HSF which contains the "primitive" words of the Forth system. These are the small routines written Forth Assembler that are the foundation of how a Forth system gets things done. 
 
@@ -28,5 +42,6 @@ This system is a work in progress by a hobbyist so you will no doubt find numero
 
 Do not hesitate to let me know a brian dot fox at foxaudioresearch dot ca
 
-* HOW TO BUILD A WORKING CAMEL FORTH FOR TI-99
-* To build the CAMEL99 binary program file for TI-99 please see INSTRUCTIONS.TXT file in this repository.
+
+
+
