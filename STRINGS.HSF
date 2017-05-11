@@ -1,0 +1,105 @@
+( RE-ENTRANT STRING LEXICON                    OCT 8 1987 Brian Fox)
+( *798 BYTES* )
+( Written orginally to provide string functions like BASIC in      )
+( TI-Forth.  I have re-written it many times;       for HsForth    )
+( GForth, MPE Power Forth, Mark re-wrote it for Turbo Forth and )
+( now back to the TI-99 for CAMEL99.                               )
+
+( Concept: All string functions return a counted string address on )
+(           the Forth parameter stack.  That address is the TOP$   )
+(           of the string stack when the function completes        )
+
+( original version used run-time size checking.)
+( It's removed now for better speed so be careful)
+
+( ** Since 1987 Forth developers have learned that processing a    )
+( string on the stack as an address,length combination gives you   )
+( amazing simplicity to cut strings so this new code reflects that )
+( using assembler words called /STRING SKIP and SCAN in CAMEL Forth)
+
+
+[CC] DECIMAL
+
+[TC]
+( build a string stack )
+      VARIABLE: SSP     ( this is the string stack pointer     )
+  255 CONSTANT: MXLEN   ( string can't be bigger than 255 bytes)
+
+: NEW:     ( -- ) MXLEN SSP +! ; ( bump the string stack pointer by 256)
+: COLLAPSE ( -- ) SSP OFF ;      ( set SSP to zero)
+
+( string stack uses unallocated Dictionary memory above Forth's PAD buffer)
+: TOP$     ( -- ) SSP @ $BUF + ;
+
+( Operations we use to create higher level functions )
+( From Wil Baden's Tool Belt [R.I.P.] )
+: C+!         ( n addr -- )  DUP >R  C@ +  R> C! ;         ( increment a byte at addr. by n)
+: APPEND      ( addr n $ -- ) 2DUP >R >R  COUNT +  SWAP CMOVE R> R> C+! ;
+: APPEND-CHAR ( char caddr -- )  DUP >R  COUNT  DUP 1+ R> C!  +  C! ;
+: STRPUSH     ( addr cnt -- top$ ) NEW: TOP$ PLACE TOP$ ;  ( Push addr/len string to string stack)
+: ?SSP     ( -- ) SSP @ 0=  IF t." String stack underflow!" ABORT THEN ;
+
+( functions to move strings)
+: PUSH$     ( $ -- )     COUNT  NEW: TOP$  PLACE ;
+: DROP$     ( -- )       ?SSP MXLEN NEGATE SSP +! ;
+: POP$      ( $ -- )     TOP$ COUNT ROT PLACE DROP$ ;
+: COPY$     ( $1 $2 -- ) >R COUNT R> PLACE ;
+
+
+( Example:  32 STRING: A$  )
+: STRING: ( n -- )    DUP MXLEN > IF t." Too big!"  ABORT THEN
+                      CREATE  1+ ALLOT ;
+
+( now we can build the standard BASIC string functions )
+: LEN      ( $ -- n )  C@ ;
+: CPOS     ( $ char -- position)  >R DUP COUNT 2DUP R> SCAN NIP - NIP ; ( 1st char is 0)
+: LEFT$    ( $ # -- top$) SWAP COUNT DROP SWAP STRPUSH ;
+: RIGHT$   ( $ #  -- top$)  >R COUNT R> OVER MIN /STRING STRPUSH ;
+: SEG$     ( $ start# cnt -- top$) >R >R COUNT R> /STRING STRPUSH  R> TOP$ C!   ;
+
+: STR$     ( n -- top$) 0 <# #S #>   STRPUSH ;
+: VAL$     ( adr$ - # ) ?NUMBER 0=  IF t." VAL$ can't convert" ABORT THEN ;
+: CHR$     ( ascii# -- top$ ) NEW: TOP$ 1 OVER C! 1+ C! ;
+
+( concatenate 2 strings USAGE: A$ B$ ADD$ C$ PUT )
+: ADD$       ( $1 $2 -- top$) SWAP PUSH$  COUNT TOP$ APPEND TOP$ ;
+
+: COMPARE$   ( $1 $2 -- flag)  OVER LEN 1+ S= ;
+: =$         ( $1 $1 -- flag)  COMPARE$ 0= ;
+: >$         ( $1 $2 -- flag)  COMPARE$ 0> ;
+: <$         ( $1 $2 -- flag)  COMPARE$ 0< ;
+
+( and some that BASIC does not have )
+: SKIP$    ( $ char -- $ ) >R COUNT R> SKIP STRPUSH ;  ( removes leading char)
+
+( assign strings )
+: ="       ( $addr -- <text> ) ?EXEC T[CHAR] " WORD SWAP COPY$ ;
+: =""      ( $addr -- ) ?EXEC OFF ;   ( don't erase, just set length to zero)
+
+(  --THE SECRET SAUCE to be as easy as BASIC--            )
+(  ------------------------------------------------------ )
+( The following words collapse the string stack after you )
+( use them. This automatically cleans up the intermediate )
+( strings that get created as you process strings         )
+(     **THIS MEANS YOU DON'T WORRY ABOUT IT**             )
+
+: $!        ( $1 $2 -- ) COPY$ COLLAPSE ;
+: PRINT     ( -- )       COUNT TYPE COLLAPSE ;
+
+[CC] HEX [TC]
+
+( test code )
+\ 80 STRING: A$
+\ 90 STRING: B$
+\ 200 STRING: C$
+\ C" THIS IS STRING A$" A$ $!
+\ C" LOOK FOR THE * IN THIS ONE" B$ $!
+\ C$ =" This is the contents of the string called C$."
+\
+\ B$ CHAR * CPOS$ LEFT$ PRINT
+\ B$ CHAR * CPOS$ RIGHT$ PRINT
+
+
+
+
+
