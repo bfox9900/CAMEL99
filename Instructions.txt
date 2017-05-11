@@ -1,5 +1,5 @@
 How to Use XFC99.EXE
-
+--------------------
 XFC99.EXE is an MS DOS application and as such will not run under Windows 8 or 10.
 It may work ok under Windows 7 but has not been tested.
 It was developed in DOSBOX on Windows 10.
@@ -19,9 +19,9 @@ a commercial Forth system albeit, from another era.
 
 If you need more information on anything contact me at: " brian dot fox at foxaudioresearch dot ca "
 
-================================================================
+
 XFC99 Commands
--------------
+--------------
 
 Name Space Control
 ------------------
@@ -73,7 +73,6 @@ CROSS-COMPILING
   You also have access to handy utilities.
   WORDS, DUMPL and TSEE.
   
-============================
 CROSS-COMPILING UTILITIES
 ----------------------------
 
