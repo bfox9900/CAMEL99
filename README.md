@@ -2,14 +2,17 @@
 Camel Forth for the TI-99
 -------------------------
 
-The file called CAMEL99 is a binary program file that should load and run on the TI-99 computer with the EDITOR/ASSEMBLER cartridge plugged into the console. The Forth system that is created is mostly true to the original Camel Forth by Brad Rodriguez but it has a few optimizations to better handle the low speed of the TI-99 computer.  Mostly notably the dictionary search has been re-written in Assembler and is called (FIND).
-26
-(See: 9900FAST.HSF)
-
-Select "Option 5":  "RUN PROGRAM FILE"
+The file called CAMEL99 is a binary program file that should load and run on the TI-99 computer with the EDITOR/ASSEMBLER cartridge plugged into the console. The Forth system that is created is mostly true to the original Camel Forth by Brad Rodriguez but it has a few optimizations to better handle the low speed of the TI-99 computer.  Mostly notably the dictionary search has been re-written in Assembler and is called (FIND). (See: 9900FAST.HSF)
 
 At this stage it is NOT a completed system, but a cross-compiler demonstration.
-Files in the LIB\ folder with the extension .FTH  can be pasted into the CLASSIC99 Emulator and they will compile and extend the system.
+Files in the LIB\ folder with the extension .FTH  can be pasted into the CLASSIC99 TI-99 Emulator and they will compile and extend the system.
+
+To RUN CAMEL99
+--------------
+Insert the EDITOR/ASSEMBLER cartridge
+Select "Option 5":  "RUN PROGRAM FILE"
+Type:  DSK1.CAMEL99
+
 
 ABOUT CAMEL99
 -------------
@@ -31,12 +34,21 @@ SOURCE CODE OVERVIEW
 Their are two primary source code files. 
 This first file is 9900FAST.HSF which contains the "primitive" words of the Forth system. These are the small routines written Forth Assembler that are the foundation of how a Forth system gets things done. 
 
-The second file is CAMEL99.HSF.  This file contains the rest of the sytem that is written in Forth. The routines in CAMEL99.HSF create the Forth interpreter and compiler. It also provides the system with hooks to the Video Display Peripheral (VDP) chip that TI-99 uses for it's terminal screen and it provides a hook to the keyboard scanning code that is in the TI-99 ROMs.
+The second file is CAMEL99.HSF.  This file contains the rest of the sytem that is written in Forth. 
+
+At the beginning of CAMEL99.HSF their is a include statement to compile BRCHLOOP.HSF. This file builds the final pieces of the cross compiler to allow it to make IF ELSE THEN, BEGIN UNTIL etc.. and it also creates the CROSS COMPILING versions of ':' and ';'.
+
+The routines in CAMEL99.HSF create the TI-99 Forth interpreter and compiler. It also provides the system with I/O hooks to the Video Display Peripheral (VDP) chip that TI-99 uses for it's terminal screen in the form of Forth's EMIT TYPE word.
+
+The keyboard scanning code that is in the TI-99 ROMs is called by one CODE word KEY? which only returns TRUE or FALSE.  The rest of the keyboard interface is in Forth.
 
 There is one "CODE" word (a word written in Forth Assembler) in CAMEL99.HSF. It is called INIT and sets up the CPU to become a Forth
 Virtual machine. INIT also copies a few important pieces of code into the high speed memory of the TI-99. This improves the speed of the system by about 20%.  
 
 The other files are features you can add the core system to explore the TI-99 or CAMEL99 itself.
+
+*WARNING* The binary code image file cannot be bigger than 8192 bytes at this time.  
+Including TOOLS.HSF, STRINGS.HSF and GRAFIX99.HSF fills it up to capacity.
 
 This system is a work in progress by a hobbyist so you will no doubt find numerous errors and places for impovement. That is all good.
 
