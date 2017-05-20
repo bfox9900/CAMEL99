@@ -7,11 +7,20 @@ The file called CAMEL99 is a binary program file that should load and run on the
 At this stage it is NOT a completed system, but a cross-compiler demonstration.
 Files in the LIB\ folder with the extension .FTH  can be pasted into the CLASSIC99 TI-99 Emulator and they will compile and extend the system.
 
-To RUN CAMEL99
---------------
+Optional Binary Programs
+------------------------
+We have also added KERNEL99 which is a minimal system running in 40 column text mode.
+
+Multitasking Version
+--------------------
+There is also a cooperative multi-tasking version. If you load the file MULTICAM
+you can paste in demonstration code called MTASKDEM.FTH found in the LIB folder.
+
+To RUN CAMEL99 Binary program files
+-----------------------------------
 Insert the EDITOR/ASSEMBLER cartridge
 Select "Option 5":  "RUN PROGRAM FILE"
-Type:  DSK1.CAMEL99
+Type:  DSK1.CAMEL99   ( or KERNEL99  or MULTICAM )
 
 
 ABOUT CAMEL99
