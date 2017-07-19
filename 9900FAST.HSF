@@ -44,7 +44,7 @@
 \ EXIT NEXT, ENTER, BRANCH and ?BRANCH and LIT in High Speed RAM.
 
 \ CAMEL99 is roughly 8% faster than Turbo Forth in simple math benchmarks
-\ but is slower in number conversion and many other things.
+\ but is slower in number conversion and screen display.
 
 \ Macros have been created to code the Forth Virtual Machine in a CPU
 \ independant manner. They make sense to a Forth programmer but may
@@ -53,7 +53,7 @@
 
 \ Multi-tasking ready:
 \ CAMEL99 commandeers R13,R14 & R15 to allow the smallest multi-tasker
-\ ever made.  3 instructions lets us jump to a task in about 20uS.
+\ ever made. 3 instructions lets us jump to a task in about 20uS.
 \ see: TASKS99.HSF
 
 \ CREDITS:
@@ -71,22 +71,18 @@
 \ R1      general purpose register
 \ R2      general purpose register
 \ R3      general purpose register
-
-: TOS     R4  ;        \ TOP of stack is cached in R4
-
-\ R5      Temp for NEXT, and overflow for '*' and '/' - OR - general purpose register
-
-: SP      R6  ;        \ parameter stack pointer
-: RP      R7  ;        \ return stack pointer
-: W       R8  ;        \ Forth 'W' register OR general purpose in a system CODE word
-: IP      R9  ;        \ Forth VM Instruction pointer
-: NEXT    R10 ;        \ Forth's "NEXT" routine address cached in R10
-
-\ R11     9900 sub-routine return register         - OR - general purpose register
-\ R12     9900 CRU register                        - OR - general purpose register
+\ R4      TOP of stack cache
+\ R5      Temp for NEXT, overflow for '*' and '/',  general purpose register
+\ R6      parameter stack pointer
+\ R7      return stack pointer
+\ R8      Forth 'W' register OR general purpose in a system CODE word
+\ R9      Forth VM Instruction pointer
+\ R10     Forth's "NEXT" routine cache
+\ R11     9900 sub-routine return register  - OR - general purpose register
+\ R12     9900 CRU register                 - OR - general purpose register
 \ R13     Multi-tasker LINK to next task    / DO loop index
 \ R14     Multi-tasker Program counter: holds address of TSTAT routine see: TASKS99.HSF
-\ R15     Multi-tasker task Status register  
+\ R15     Multi-tasker task Status register
 
   [UNDEFINED] XASSEMBLER
   [IF]   include cc9900\asm99003.hsf
@@ -94,16 +90,24 @@
   [THEN]
 
 \ ==========================================================================
-\ F O R T H   V I R T U A L   M A C H I N E   M A C R O S
+\ F O R T H   V I R T U A L   M A C H I N E  S U P P O R T
 
 CROSS-COMPILING
+[UNDEFINED] CALL,
+[IF]
+    CR ." Defining Forth Virtual machine MACROs ..."
+    include cc9900\forthvm.hsf           \ contains macros: PUSH POP CALL etc...
+[THEN]
 
-CR ." Defining Forth Virtual machine MACROs ..."
-include cc9900\forthvm.hsf           \ contains macros: PUSH POP CALL etc...
 
 \ ==========================================================================
-cr ." Including TI99 EQUATES"
-include cc9900\99equ.hsf
+\ T I - 9 9   S U P P O R T
+
+[UNDEFINED] vdpwa
+[IF]
+    cr ." Including TI99 EQUATES"
+    include cc9900\99equ.hsf
+[THEN]
 
 \ ==========================================================================
 \ Compiler extensions to manage copying certain primitives into hi-speed (HS) RAM
@@ -145,7 +149,6 @@ l: _?branch   \ Faster way to avoid penalty of TOS refill
               @@2 JNC,        \                                                                         10
               IP INCT,        \ move IP forward (don't branch)                                          10
               @@9 JMP,        \ *replaced NEXT, with short JMP. 20% faster! same size                   10
-
 l: _branch
 @@2:         *IP IP ADD,      \ *IP points to an offset number in memory. Add it to IP causes a jump.
               @@9 JMP,
@@ -179,9 +182,7 @@ l: _HSend                     \ this label tells the compiler where the high spe
 \ conditional control flag to select certain CODE primitives versus
 \ alternative Forth versions in CAMEL99.HSF
 
-TRUE VALUE FASTER
-
-
+TRUE VALUE FASTER 
 
 \ ==========================================================================
 CR .( F O R T H  P R I M I T I V E S  B E G I N)
@@ -189,6 +190,7 @@ CR .( F O R T H  P R I M I T I V E S  B E G I N)
 \ The following words have been called "DOERS" by many in the past. I don't like the name.
 \ I have chosen to to call them "EXECUTORS".  The words are the EXECUTION CODE that runs
 \ for the various type of words in a Forth sytstem.
+
 
 CODE: EXIT    ( -- )
               EXIT2 CFA!                      \ covert label address to fast RAM address store in CFA
@@ -218,8 +220,8 @@ CODE: DOCON   ( -- n )                             \ Executor that executes a "C
               END-CODE
 
 CODE: DOVAR   ( -- addr)                           \ Executor that executes a "VARIABLE"
-\              SP -4 ADDI,                          \ something weird about DOVAR needing to DECR the stack by 4
-              SP DECT, SP DECT,
+\              SP -4 ADDI,                         \ this is not working??
+              SP DECT, SP DECT,                    \ something weird about DOVAR needing to DECR the stack by 4
               TOS *SP MOV,                         \ push TOS
               W   TOS MOV,                         \ put the parameter field address in TOS
               NEXT,
@@ -235,22 +237,23 @@ CODE: DOUSER ( -- addr)
 
 \ CODE: DOCODE    *IP B, NEXT, END-CODE  \ let's jump into code from a Forth word
 
-\ *From Camel Forth MSP430*
-\ ; DODOES is the code action of a DOES> clause.  For ITC Forth:
-\ ; defined word:  CFA: doescode
-\ ;                PFA: parameter field
-\ ;
-\ ; doescode: MOV #DODOES,PC      ; 16-bit direct jump, in two cells
-\ ;           high-level thread
-\ ;
-\ ; Note that we use JMP DODOES instead of CALL #DODOES because we can
-\ ; efficiently obtain the thread address.  DODOES is entered with W=PFA.
-\ ; It enters the high-level thread with the address of the parameter
-\ ; field on top of stack.
-
-\ dodoes: \ -- a-addr    ; 3 for MOV #DODOES,PC
+\ DODOES is the code action of a DOES> clause.  For ITC Forth:
+\ defined word:  CFA: doescode
+\                PFA: parameter field
+\
+\ doescode: MOV #DODOES,PC      ; 16-bit direct jump, in two cells
+\           high-level thread
+\
+\ Note that we use JMP DODOES instead of CALL #DODOES because we can
+\ efficiently obtain the thread address.  DODOES is entered with W=PFA.
+\ It enters the high-level thread with the address of the parameter
+\ field on top of stack.
+\
+\        PUBLIC dodoes
+\ dodoes: ; -- a-addr     ; 3 for MOV #DODOES,PC
 \        SUB #2,PSP      ; 1 make room on stack
 \        MOV TOS,0(PSP)  ; 4
+
 \        MOV W,TOS       ; 1 put defined word's PFA in TOS
 \        PUSH IP         ; 3 save old IP on return stack
 \        MOV -2(W),IP    ; 3 fetch adrs of doescode from defined word
@@ -266,33 +269,45 @@ l: DODOES  ( -- a-addr)
               NEXT,
               END-CODE
 
+\
+\ OPTION 1              ; OPTION 2
+\  MOV #DODOES,PC   3   ;  CALL #DODOES      5
+\   ...                 ;   ...
+\  PUSH IP          3   ;  POP W            2
+\  MOVE -2(W),IP    3   ;  PUSH IP          3
+\  ADD #4,IP        1   ;  MOV W,IP         1
+
+
 CODE: EXECUTE ( xt -- )  \ another example where refilling TOS takes extra time vs no TOS register
               TOS W MOV,                           \ move the execution token in TOS into temp
               TOS POP,                             \ refill TOS
-              *W+ R5 MOV,                          \ move contents of the XT (the address of the doer routine) to R5
-              *R5 B,                               \ branch to the address of the DOER routine
+             *W+ R5 MOV,                           \ move contents of the XT (the address of the doer routine) to R5
+             *R5 B,                                \ branch to the address of the DOER routine
               END-CODE
 
-code: ?branch
+CODE: ?branch
              _?BRANCH >HSRAM CFA!                  \ put fast address into the CFA
               end-code
 
-code: branch
+CODE: branch
              _BRANCH >HSRAM CFA!                   \ put fast address into the CFA
              end-code
-
 
 \ ==========================================================================
 CR .( M E M O R Y  F E T C H  &  S T O R E)
 
-CODE: !      ( n addr -- )
-             *SP+ *TOS MOV,                        \ 20
-              TOS POP,                             \ 22
-              NEXT,                                \ 42 vs 48 in Turbo Forth
+CODE: 2!      ( d addr -- )          \ interleaved with ! to save space
+             *SP+ 2 (TOS) MOV,
+              @@1 JMP,
++CODE: !      ( n addr -- )
+@@1:         *SP+ *TOS MOV,          \ 20
+              TOS POP,               \ 22
+              NEXT,                  \ 42 vs 48 in Turbo Forth
               END-CODE
 
+
 CODE: @      ( a -- w )
-             *TOS TOS MOV,                         \ 18 vs 48 in Turbo Forth
+             *TOS TOS MOV,           \ 18 vs 48 in Turbo Forth
               NEXT,
               END-CODE
 
@@ -303,109 +318,46 @@ CODE: 2!     ( d addr -- )
               NEXT,
               END-CODE
 
+\ CODE: 2@     ( addr -- d)
+\             *TOS+ W MOV,         \ 22 fetch from addr to W, auto-inc TOS by 2
+\             *TOS TOS MOV,        \ 18 fetch from addr+2 to TOS
+\              W PUSH,             \ 28
+\              NEXT,              \  68
+\              END-CODE
+
 CODE: 2@     ( addr -- d)
-             *TOS+ W MOV,                         \ fetch from addr to W, auto-inc TOS by 2
-             *TOS TOS MOV,                        \ fetch from addr+2 to TOS
-              W PUSH,
-              NEXT,
+             *TOS+ PUSH,          \  32 fetch from addr to W, auto-inc TOS by 2
+             *TOS TOS MOV,        \  18 fetch from addr+2 to TOS
+              NEXT,              \   40
               END-CODE
 
+
 CODE: C!     ( c addr -- )
-             *SP+  W MOV,                          \ 22
-              W SWPB,                              \ 10
-              W *TOS MOVB,                         \ 18
-              TOS POP,                             \ 22
-              NEXT,                                \ 72   same as Turbo Forth
+             *SP+  W MOV,            \ 22
+              W SWPB,                \ 10
+              W *TOS MOVB,           \ 18
+              TOS POP,               \ 22
+              NEXT,                  \ 72   same as Turbo Forth
               END-CODE
 
 CODE: COUNT  ( addr -- addr' u)
-              TOS PUSH,                            \ make a copy of addr
-             *SP INC,                              \ inc. past the count byte
-l: _C@       ( addr -- c )                         \ this is code for C@ interleaved with COUNT (saves 2 bytes)
+              TOS PUSH,              \ make a copy of addr
+             *SP INC,                \ inc. past the count byte
+l: _C@       ( addr -- c )           \ this is code for C@ interleaved with COUNT (saves 2 bytes)
              *TOS TOS MOVB,
-              TOS SWPB,                            \ this combo is 2 cycles faster than TOS 8 SRL,
+              TOS SWPB,              \ this combo is 2 cycles faster than TOS 8 SRL,
               TOS 00FF ANDI,
               NEXT,
-              END-CODE                             \ 28 vs 88 in Turbo Forth
+              END-CODE               \ 28 vs 88 in Turbo Forth
 
-CODE: C@     _C@ CFA!                              \ make a FORTH word for C@ code which jumps to _C@
+CODE: C@     _C@ CFA!                \ make a FORTH word for C@ code which jumps to _C@
               END-CODE
 
 CODE: +!     ( n addr --)
-             *SP+ *TOS ADD,                        \ 14+8+4 = 26 cycles
+             *SP+ *TOS ADD,                       \ 14+8+4 = 26 cycles
               TOS POP,                             \          22 cycles
               NEXT,                                \ -------------------
               END-CODE                             \          48 cycles
-
-0 [if]
-\ ========================================================================
-\ D I R E C T   M E M O R Y   O P E R A T I O N S
-\ TMS9900 indirect addressing mode we can do things faster to variables
-\ by not transferring: memory->stack->memory
-CR
-cr .( ****** HEY WE DID THIS ****** )
-CR
-
-CODE: 1+!    ( addr -- )
-             *TOS  INC,
-              NEXT,
-              END-CODE
-
-CODE: 1-!    ( addr -- )
-             *TOS  DEC,
-              NEXT,
-              END-CODE
-
-CODE: 2+!    ( addr -- )
-             *TOS  INCT,
-              NEXT,
-              END-CODE
-
-CODE: 2-!    ( addr -- )
-             *TOS  DECT,
-              NEXT,
-              END-CODE   
-
-CODE: AND!    ( u adr -- )     \ Equivalent to:   X @ 00FF AND  X !
-             *SP INV,            \ Usage:    00FF X AND!
-             *SP+ *TOS SZC,
-              TOS POP,
-              NEXT,
-              END-CODE
-
-CODE: OR!    ( u adr -- )
-             *SP+ *TOS OR,
-              TOS POP,
-              NEXT,
-              END-CODE
-
-CODE: XOR!   ( u adr -- )
-             *SP+ *TOS XOR,      \ with TOS in register this is WAAAY better 22 VS 58
-              TOS POP,
-              NEXT,
-              END-CODE
-
-CODE: INVERT! ( adr -- )
-              *TOS INV,
-              TOS POP,
-              NEXT,
-              END-CODE
-
-CODE: ABS!   ( adr -- )
-             *TOS ABS,
-              TOS POP,
-              NEXT,
-              END-CODE
-
-CODE: NEGATE! ( adr -- )
-             *TOS NEG,
-              TOS POP,
-              NEXT,
-              END-CODE
-
-
-[THEN]
-
 
 \ ==========================================================================
 CR .( R E T U R N   S T A C K)
@@ -434,12 +386,27 @@ CODE: R>      ( -- w )
               NEXT,
               END-CODE              \ 50 vs 36 in TurboForth
 
-
 CODE: R@      ( -- w )
               TOS PUSH,
              *RP TOS MOV,
               NEXT,
               END-CODE
+
+CODE: 2>R     TOS RPUSH,            \ 28
+              TOS POP,
+              TOS RPUSH,            \ 28
+              TOS POP,              \ 22
+              NEXT,
+              END-CODE
+
+CODE: 2R>      ( -- w )
+              TOS PUSH,             \ 28
+             *RP+ TOS MOV,          \ 22
+              TOS PUSH,             \ 28
+             *RP+ TOS MOV,          \ 22
+              NEXT,
+              END-CODE              \ 50 vs 36 in TurboForth
+
 
 \ ===================================================================
 CR .( D A T A   S T A C K)
@@ -466,18 +433,15 @@ CODE: NIP     ( n n' -- n')         \ 10 vs 24 in TurboForth
               NEXT,
               END-CODE
 
-
 CODE: ?DUP    ( x -- 0 | x x)        \ ?DUP interleaved with DUP to save space
               TOS TOS MOV,           \ test for TOS<>0
               @@1 JNE,               \ if TOS<>0 goto DUP
               NEXT,                  \ else return to Forth
-              END-CODE
-
+\              END-CODE
 +CODE: DUP    ( w -- w w )          \ create a Forth Header for DUP
 @@1:          TOS PUSH,
               NEXT,
               END-CODE
-
 
 CODE: SWAP    ( w1 w2 -- w2 w1 )
               TOS   W MOV,          \ 14
@@ -492,7 +456,7 @@ CODE: OVER   ( w1 w2 -- w1 w2 w1 )
               NEXT,                 \ 50 vs 36 in TurboForth
               END-CODE
 
-0 [IF]        ( saves 8 bytes if you use Forth Versions)
+-1 [IF]        ( saves 8 bytes if you use Forth Versions)
 CODE: ROT    ( n1 n2 n3 --  n2 n3 n1)
               2 (SP)    W MOV,      \ move bottom n1 to TEMP             14+8 =   22
              *SP   2 (SP) MOV,      \ move n2 to bottom position         14+4+8 = 26
@@ -564,6 +528,19 @@ CODE: PICK   ( n -- n)             \ interesting: GForth ITC takes 10 intel inst
              *W TOS MOV,
               NEXT,
               END-CODE
+0 [IF]
+CODE: 2PICK  ( a b c d --  a b c d b)    \ this way is faster
+             TOS PUSH,
+             4 (SP) TOS MOV,
+             NEXT,
+             END-CODE
+
+CODE: 3PICK
+             TOS PUSH,
+             6 (SP) TOS MOV,
+             NEXT,
+             END-CODE
+[THEN]
 
 \ ===================================================================
 CR .( L O G I C A L   O P E R A T I O N S)
@@ -586,7 +563,7 @@ CODE: XOR     ( w w -- w )
 
 \ ===================================================================
 CR .( A R I T H M E T I C)
-                                     \ TOS in place math is about 40% faster with TOS in register
+\ TOS in place math is about 40% faster with TOS in register
 CODE: 1+      ( n -- n)
               TOS INC,
               NEXT,
@@ -608,22 +585,22 @@ CODE: 2-      ( n -- n)
               END-CODE
 
 CODE: 2*      ( n -- n)
-              TOS TOS ADD,             \ mpy instruction is 52 clocks minimum. This is 14 clocks
+              TOS TOS ADD,  \ mpy instruction is 52 clocks minimum. This is 14 clocks
               NEXT,
               END-CODE
 
-CODE: 4*      ( n -- nx4)              \ use in graphics & sprite calulations
+CODE: 4*      ( n -- nx4)    \ use in graphics & sprite calulations
                TOS 2 SLA,
                NEXT,
                END-CODE
 
-CODE: 8*      ( n -- nx8)              \ use in graphics & sprite calulations
+CODE: 8*      ( n -- nx8)   \ use in graphics & sprite calulations
                TOS 3 SLA,
                NEXT,
                END-CODE
 
-CODE: 2/      ( n -- n)                \ div instruction is 52 clocks minimum
-              TOS 1 SRA,               \ 14 vs 18 for Turboforth
+CODE: 2/      ( n -- n)     \ div instruction is 52 clocks minimum
+              TOS 1 SRA,    \ 14 vs 18 for Turboforth
               NEXT,
               END-CODE
 \ ===================================================================
@@ -631,33 +608,29 @@ CR .( ANS Shift operations)
 
 CODE: RSHIFT  ( n bits -- n')
               TOS R0  MOV,            \ 14 the shift bits MUST be in R0 to do this
-             *SP+ W   MOV,            \ 22
-              W   R0 SRL,             \ x
-              W   TOS MOV,            \ 14
+             *SP+ TOS   MOV,          \ 22
+              TOS R0 SRL,             \ x
               NEXT,
               END-CODE
 
 CODE: LSHIFT  ( n bits -- n')
-               TOS R0 MOV,            \ the shift bits MUST be in R0 to do this
-              *SP+ W  MOV,
-               W  R0  SLA,
-               W TOS  MOV,
+               TOS R0  MOV,           \ the shift bits MUST be in R0 to do this
+              *SP+ TOS MOV,
+               TOS R0  SLA,
                NEXT,
                END-CODE
-
 CODE: INVERT  ( u -- w)
-              TOS INV,                \ 10  vs  14 in stack memory
+              TOS INV,       \ 10  vs  14 in stack memory
               NEXT,
               END-CODE
 
 CODE: UM+    ( u u -- ud )
-             *SP TOS ADD,              \ 18
-             *SP CLR,                  \ 10
-              @@1 JNC,                 \ 10
-             *SP INC,                  \ 14
-@@1:          NEXT,                   \  52
+             *SP TOS ADD,    \ 18
+             *SP CLR,        \ 10
+              @@1 JNC,       \ 10
+             *SP INC,        \ 14
+@@1:          NEXT,          \ 52
               END-CODE
-
 
 \ : +   ( u1 u2 -- u ) UM+ DROP ;  original Camel Forth code is bigger
 CODE: +       ( u1 u2 -- u )
@@ -733,24 +706,25 @@ CR .( M U L T I P L Y   A N D   D I V I D E)
 \        Turboforth   18.5 seconds
 
 
-CODE: UM*     ( n n -- d)     \ 2 cells input -- 2 cells output
-             *SP  TOS MPY,    \ TOS contains MSBits of answer                     52+4=56
-              R5  *SP MOV,    \ TOS+1 (ie R5) has LSBits, goes next on stack           18
-              NEXT,                                                               \    74 vs 132 in TurboForth
+CODE: UM*     ( n n -- d)     \ 2 cells in -- 2 cells out
+             *SP  TOS MPY,    \ 52+4=56
+              R5  *SP MOV,    \ 18
+              NEXT,           \ 74 vs 132 in TF
               END-CODE
 
-CODE: *      ( n n -- n)      \ same size as  : *  UM* DROP ;but 4x faster
-             *SP+ TOS MPY,    \ 52+8 = 60 vs 98
-              R5  TOS MOV,    \ move the TOS+1 register back to TOS
-              NEXT,
+CODE: *      ( n n -- n)      \ same size as  : *  UM* DROP ; but 4x faster
+             *SP+ R3 MOV,     \ 22
+              TOS R3 MPY,     \ 52  cool trick !
+              NEXT,           \ 74
               END-CODE
-              
+0 [IF]
 CODE: *+     ( addr ndx size -- addr')  \ array address calculator
              *SP+ TOS MPY,              \ 60
              *SP+ TOS MOV,              \ 22
               R5  TOS ADD,              \ 14
               NEXT,                    \  96
               END-CODE
+[THEN]
 
 CODE: UM/MOD  ( ud u1 -- u2 u3 )    \ numerator(32bits), denominator -- remainder,quotient
              *SP+ R1 MOV,     \ POP the high word of ud to r1                 22
@@ -793,6 +767,11 @@ CODE: 0=     ( n -- ?)
               @@9 JGT,
               @@8 JMP,
 
++CODE: <     ( n1 n2 -- flag)
+             *SP+ TOS CMP,
+              @@9 JLT,
+              @@8 JMP,
+
 \ ============================================
 0 [IF]   \ saves 14 bytes if Forth versions are used
 
@@ -811,10 +790,6 @@ CODE: 0=     ( n -- ?)
               @@9 JNE,
               @@8 JMP,
 
-+CODE: <     ( n1 n2 -- flag)
-             *SP+ TOS CMP,
-              @@9 JLT,
-              @@8 JMP,
 [THEN]
 \ --------------------------------------------
 
@@ -864,15 +839,19 @@ CODE: PC@    ( CRUadr -- c)
 \ ===================================================================
 CR .(   M O V E   C M O V E  C M O V E >   F I L L )
 
-\ code: MOVE  ( src dst n -- )   \ 16bit CELL move    n= no. of cells!!  This is old school PDP 11 Forth
-\             *SP+ R0 MOV,       \ pop DEST into R0
-\             *SP+ R1 MOV,       \ pop source into R1
-\ @@1:         *R1+ *R0+ MOV,    \ memory to memory move, auto increment by 2, nice instruction set for this! :-)
-\              TOS DECT,         \ n is in TOS
-\              @@1 JNE,
-\              TOS POP,
-\              NEXT,
-\              END-CODE
+0 [IF]
+CODE: MOVE  ( src dst n -- )   \ 16bit CELL move, A.6.1.1900 MOVE
+            *SP+ R0 MOV,       \ pop DEST into R0
+            *SP+ R1 MOV,       \ pop source into R1
+             TOS TOS MOV,
+             @@2 JEQ,          \ if n=0 get out
+@@1:        *R1+ *R0+ MOV,     \ memory to memory move, auto increment by 2. :-)
+             TOS DEC,          \ n is in TOS
+             @@1 JNE,
+@@2:         TOS POP,
+             NEXT,
+             END-CODE
+[THEN]
 
 CODE: CMOVE   ( src dst n -- )  \ forward character move
              *SP+ R0 MOV,       \ pop DEST into R0                           22
@@ -880,7 +859,7 @@ CODE: CMOVE   ( src dst n -- )  \ forward character move
               TOS TOS MOV,
               @@2 JEQ,          \ if n=0 get out
 @@1:         *R1+ *R0+ MOVB,    \ byte move, with auto increment by 1. cool  26
-              TOS DEC,          \ n is in TOS (R5)                           10
+              TOS DEC,          \ n is in TOS (R4)                           10
               @@1 JNE,                                                \      10
 @@2:          TOS POP,                                                \      22
               NEXT,                                                   \     112
@@ -914,7 +893,7 @@ CODE: FILL   ( addr cnt char -- )
               END-CODE
 
 \ ===================================================================
-cr ." ANS Forth DO/LOOP on return stack"
+cr .( ANS Forth DO/LOOP )
 
 \  D O   L O O P S
 
@@ -927,11 +906,16 @@ cr ." ANS Forth DO/LOOP on return stack"
 
 
 \ CAMEL Forth prefers to put loop index and limit in registers.
-\ This version allows you to select using R stack only
-\ -OR- using R15 as an index register
+\ Using 2 registers makes loops about 14% faster
+\ We found that that we got the similar benefits by with limit on Rstack
+\ and index in  R15.
 
-\ using registers makes loops about 8% faster
+\ : TEST FFFF 0 DO LOOP ;   3.22  using R15
+\                           3.58  using Rstack 11% faster
+\                           3.53  TurboForth
 \ ====================================================================
+.( index in register DO/LOOP
+
 0 [IF]
 
 CODE: <?DO> ( limit ndx -- )
@@ -940,72 +924,59 @@ CODE: <?DO> ( limit ndx -- )
               IP RPOP,           \ otherwise do a forth 'exit'
               TOS POP,           \ clean the parameter stack
               NEXT,
-+CODE: <DO>  ( limit indx -- )
-@@1:          RP  -4 ADDI,       \ make loop stack frame space
-              R14  2 (RP) MOV,   \ push limit
-              R13    *RP  MOV,   \ push index
-              R14 8000 LI,
-              TOS R13 MOV,
-             *SP+ R14 SUB,       \ pop LIMIT, compute 8000h-limit "fudge factor"
-              R14 R13 ADD,       \ loop ctr = index+fudge
-              TOS POP,           \ refill TOS
+
++CODE: <DO> ( limit indx -- )
+@@1:          R15 RPUSH,        \ save R15, to use as INDEX
+              TOS R15 MOV,      \ load index to R15
+              TOS POP,          \ pop limit to TOS
+              R0  8000 LI,      \ load "fudge factor"
+              TOS R0 SUB,       \ LIMIT, compute 8000h-limit "fudge factor"
+              R0  RPUSH,        \ rpush limit
+              R0  R15 ADD,      \ loop ctr = index+fudge ->r15
+              TOS POP,          \ refill TOS
               NEXT,
               END-CODE
 
-CODE: <LOOP>
-              R13 INC,          \ increment loop
+CODE: <LOOP>  R15 INC,          \ increment loop
 @@2:          @@1 JNO,          \ if no overflow then loop again
               IP INCT,          \ move past (LOOP)'s in-line parameter
-             *RP R13 MOV,       \ restore old loop values
-              2 (RP) R14 MOV,
-              RP 4 ADDI,
+              RP INCT,          \ remove limit from Rstack
+              R15 RPOP,         \ restore r15
               NEXT,
-@@1:         *IP IP ADD,        \ jump back to top of loop  (branch)
+ @@1:         *IP IP ADD,        \ jump back to top of loop  (branch)
               NEXT,
               END-CODE
-
-
 +CODE: <+LOOP>
-              TOS R13 ADD,      \ saving space by jumping into <loop>
+              TOS R15 ADD,      \ add TOS to loop index in R15
               TOS POP,          \ refill TOS, (does not change overflow flag)
               @@2 JMP,
 END-CODE
 
-
-\ CODE: UNLOOP
-\              R13 RPOP,         \ restore old loop values
-\              R14 RPOP,
-\              NEXT,
-\              END-CODE
-
 CODE: I       ( -- n)
-              SP DECT,          \ PUSH TOS register
-              TOS *SP MOV,
-              R13 TOS MOV,
-              R14 TOS SUB,      \ index = loopindex - fudge
+              TOS PUSH,
+              R15 TOS MOV,
+             *RP TOS SUB,       \ index = loopindex-fudgevalue
               NEXT,
               END-CODE
 
 CODE: J       ( -- n)
-              SP DECT,
-              TOS *SP MOV,
-             *RP TOS MOV,        \ outer loop index is on the rstack
-              2 (RP) TOS SUB,     \ index = loopindex - fudge
+              TOS PUSH,
+              4 (RP) TOS MOV,       \ outer loop index is on the rstack
+              6 (RP) TOS SUB,       \ index = loopindex - fudge
               NEXT,
               END-CODE
-
-
 CODE: LEAVE
-              R13 RPOP,            \ restore old loop values
-              R14 RPOP,
-              IP RPOP,             \ pop something else to do from the return stack
+              RP  INCT,          \ RDROP the loop limit
+              R15 RPOP,          \ restore R15 to old value
+              IP  RPOP,          \ pop something else to do from the return stack
               NEXT,
               END-CODE
 
 [ELSE]
 
 \ ====================================================================
-\ slower Rstack version
+.( Rstack DO/LOOP)
+
 CODE: <?DO> ( limit ndx -- )
              *SP TOS CMP,        \ compare 2 #s
               @@1 JNE,           \ if they are not the same jump to regular 'do.'  (BELOW)
@@ -1014,7 +985,7 @@ CODE: <?DO> ( limit ndx -- )
               NEXT,
 
 +CODE: <DO> ( limit indx -- )
-@@1:          R0  8000 LI,      \ load "fudge factor" to LIMIT
+@@1:          R0  8000 LI,      \ load "fudge factor"
              *SP+ R0 SUB,       \ LIMIT, compute 8000h-limit "fudge factor"
               R0  TOS ADD,      \ loop ctr = index+fudge
               R0  RPUSH,        \ rpush limit
@@ -1025,12 +996,11 @@ CODE: <?DO> ( limit ndx -- )
 
 CODE: <LOOP>
              *RP INC,           \ increment loop
- @@2:          @@1 JNO,          \ if no overflow then loop again
+ @@2:         @@1 JNO,          \ if no overflow then loop again
               IP INCT,          \ move past (LOOP)'s in-line parameter
-\             *RP+ *RP+ CMP,    \ RP INC by 4 (1 cell, 30 clocks) Doesn't make much difference to loop speed.
               RP 4 ADDI,
               NEXT,
- @@1:         *IP IP ADD,        \ jump back to top of loop  (branch)
+ @@1:        *IP IP ADD,        \ jump back to top of loop  (branch)
               NEXT,
               END-CODE
 
@@ -1042,8 +1012,8 @@ CODE: <LOOP>
 
 CODE: I       ( -- n)
               TOS PUSH,            \ making space in TOS slows this down
-              *RP TOS MOV,
-              2 (RP) TOS SUB,      \ index = loopindex - fudge
+              *RP TOS MOV,         \ index->TOS
+              2 (RP) TOS SUB,      \ index = index - fudge
               NEXT,
               END-CODE
 
@@ -1059,19 +1029,9 @@ CODE: LEAVE
                IP RPOP,             \ pop something else to do from the return stack
                NEXT,
                END-CODE
-               
+
 [THEN]
 
-0 [IF]
-\ bounds is just so handy and in ASSEMBLER it is the same size as using
-\ 'OVER + SWAP' just 1 time in your code.
-CODE: BOUNDS ( adr len -- adr2 adr1)
-             *SP R1 MOV,
-              TOS *SP ADD,
-              R1 TOS MOV,
-              NEXT,
-              END-CODE
-[THEN]
 
 \ ===================================================================
 CR .(  B I N A R Y    O N   O F F )
@@ -1239,7 +1199,7 @@ CODE: (FIND) ( Caddr NFA -- XT ? )
              *R3  R3 MOV,                      \ do a fetch, R3 now has new NFA
               @@1 JNE,                         \ if <> 0 let's try the next word in the dictionary!
               NEXT,                            \ we got zero. End of the list! Go back to Forth
-\ end Outer loop 
+\ end Outer loop
 
 \ convert NFA in R3 to CFA -> R2
 @@6:          R3 R2 MOV,                       \ if found R3 has a name field address (NFA), copy ro R2
@@ -1276,22 +1236,21 @@ CR ." V D P  C H I P  I N T E R F A C E"
 \ in Forth and still get excellent performance.
 
 \ factored sub-routine. Sets up VDP address
-l: WMODE      R0 3FFF ANDI,             \ WRITE mode entry. CLR control bits
-              R0 4000  ORI,             \ set control bits to write mode (01)
-
-l: VMODE      0 LIMI,
+l: WMODE      R0 4000  ORI,             \ set control bits to write mode (01)
+l: RMODE      0 LIMI,
+              R5 VDPWA LI,
               R0 SWPB,                  \ R0= VDP-adr, set the VDP WRITE address
-              R0 VDPWA @@ MOVB,         \ send low byte of vdp ram write address
+              R0 *R5 MOVB,              \ send low byte of vdp ram write address
               R0 SWPB,
-              R0 VDPWA @@ MOVB,         \ send high byte of vdp ram write address
+              R0 *R5 MOVB,              \ send high byte of vdp ram write address
               2 LIMI,
               RT,
+
 
 \ VSBR Forth style, on the stack
 CODE: VC@     ( VDP-adr -- char )       \ Video CHAR fetch
               TOS R0 MOV,               \ VDP address into R0
-              R0 3FFF ANDI,             \ upper bits cleared= read mode
-              VMODE @@ BL,              \ set address in read mode
+              RMODE @@ BL,              \ set address in read mode
               VDPRD @@ TOS MOVB,        \ READ char from VDP RAM into TOS
               TOS 8 SRL,                \ move the damned byte to correct half of the word
               NEXT,
@@ -1299,24 +1258,23 @@ CODE: VC@     ( VDP-adr -- char )       \ Video CHAR fetch
 
 CODE: V@     ( VDPadr -- n)             \ video fetch 16bit int
               TOS R0 MOV,               \ VDP address into R0
-              R0 3FFF ANDI,             \ upper bits cleared= read mode
-              VMODE @@ BL,              \ set address in read mode
-              TOS CLR,                  \ gotta clear cuz TOS will hold 16 bits (XX00)
-              VDPRD @@ TOS MOVB,        \ READ byte from VDP RAM into TOS
-              VDPRD @@ W   MOVB,        \ read MSB into W (vdp address H/W auto-increments!)
-              W 8 SRL,                  \ (00YY)
-              W TOS OR,                 \ OR the bytes together in TOS as a 16 bit word
+              R3 VDPRD LI,              \ put the VDP read port address in R3. 12.9% faster
+              RMODE @@ BL,              \ set address in read mode
+             *R3 TOS MOVB,              \ READ char from VDP RAM into TOS
+             *R3 R0 MOVB,               \ read next byte into R0
+              R0  8 SRL,                \ move the damned byte to correct half of the word
+              R0 TOS OR,
               NEXT,
               END-CODE
+
 
 \ VMBR Forth style
 CODE: VREAD   ( VDP-adr RAM-addr cnt  -- )
               R1 POP,                   \ pop buffer addr. to R1
               R0 POP,                   \ pop VDP addr. to R0
-              R0 3FFF ANDI,             \ upper bits cleared= read mode
               R3 VDPRD LI,              \ put the VDP read port address in R3. 12.9% faster
-              VMODE @@ BL,              \ call the VMODE control routine
-@@1:         *R3 *R1+ MOVB,             \ READ char from VDP RAM into CPU RAM and point to next char
+              RMODE @@ BL,              \ call the RMODE control routine
+@@1:         *R3 *R1+ MOVB,             \ READ char from VDP RAM into CPU RAM and auto
               TOS DEC,                  \ dec the counter
               @@1 JNE,                  \ check if done
               TOS POP,                  \ refill TOS
@@ -1330,8 +1288,8 @@ CR ." V D P   W R I T E"
 CODE: VWRITE  ( RAM-addr VDP-addr cnt -- )
               R0 POP,                  \ vaddr to R0
               R1 POP,                  \ cpu addr to R1
-              R3 VDPWD LI,             \ vdp addr. in a reg. makes this 12.9% faster
               WMODE @@ BL,             \ setup VDP write address
+              R3 VDPWD LI,             \ vdp addr. in a reg. makes this 12.9% faster
 @@1:         *R1+ *R3 MOVB,            \ write byte to vdp write port
               TOS DEC,                 \ dec the byte counter
               @@1 JNE,                 \ jump back if not done
@@ -1343,8 +1301,8 @@ CODE: VFILL   ( VDP-addr count char-- )
               TOS SWPB,                \ fix the TMS9900 byte order
               R2 POP,                  \ R2=count
               R0 POP,                  \ VDP-addr popped into R0
-              R3 VDPWD LI,             \ vdp addr. in a reg. makes this 12.9% faster
               WMODE @@ BL,             \ setup VDP write address IN R0
+              R3 VDPWD LI,             \ vdp addr. in a reg. makes this 12.9% faster
 @@1:          TOS *R3 MOVB,            \ write byte to vdp ram
               R2 DEC,                  \ dec the byte counter
               @@1 JNE,                 \ jump back if not done
@@ -1364,7 +1322,7 @@ CODE: VC!     ( char Vaddr  -- )       \ Video CHAR store
               END-CODE
 
 0 [IF]
-CODE: VSBW ( char Vaddr  -- )       \ VSBW marginally faster than VC!
+CODE: VSBW ( char Vaddr  -- )          \ VSBW marginally faster than VC!
               TOS R0 MOV,              \ need address in R0 to call WMODE
               R0 4000  ORI,             \ set control bits to write mode (01)
               0 LIMI,
@@ -1385,13 +1343,13 @@ CODE: V!     ( n Vaddr  -- )           \ Video store 16BIT int
               TOS R0 MOV,              \ need address in R0 to call WMODE
               WMODE @@ BL,             \ branch to setup VDP write address
               TOS POP,                 \ get char into TOS register
-              TOS VDPWD @@ MOVB,       \ write hi byte to vdp data port
+              R3 VDPWD LI,             \ vdp addr. in a reg. makes this faster
+              TOS *R3 MOVB,            \ write hi byte to vdp data port
               TOS SWPB,                \ swap bytes
-              TOS VDPWD @@ MOVB,       \ write lo byte to vdp data port
+              TOS *R3 MOVB,            \ write lo byte to vdp data port
               TOS POP,                 \ refill TOS
-              NEXT,                    
+              NEXT,
               END-CODE
-
 
 \ * VDP write to register. Kept the TI name
 CODE: VWTR    ( n reg -- )             \ Usage: HEX 0705 VWTR {write 5 to register 7}
@@ -1401,7 +1359,7 @@ CODE: VWTR    ( n reg -- )             \ Usage: HEX 0705 VWTR {write 5 to regist
               TOS 00FF ANDI,
               TOS R0 SOC,
               R0 8000 ORI,             \ set "write to register" mode bit
-              VMODE @@ BL,
+              RMODE @@ BL,
               TOS POP,
               NEXT,
               END-CODE
@@ -1417,7 +1375,7 @@ l: _VCOL      BSS 2                     \ cursor col position
 l: _VADR      BSS 2                     \ current row ADDRESS in screen memory
 l: _C/L       BSS 2                     \ Char/line for screen mode (32 or 40)
 l: _C/SCR     BSS 2                     \ hold characters per screen (pronounced: "see per screen")
-l: _CURSR     005F data,                \ holds the cursor character value default= '_'
+l: _CURSR     DATA 005F                 \ holds the cursor character value default= '_'
 
 \ Since FORTH variables are just addresses, it is simple to to link these
 \ addresses (ie Pointers) into the CAMEL 99 compiler.
@@ -1427,15 +1385,15 @@ l: _CURSR     005F data,                \ holds the cursor character value defau
 \ See: CAMEL99.hsf
 
 
-\ These assembler routines manage the simple screen math at machine speed.
+\ These assembler routines manage the screen math at machine speed.
 \ They are smaller and faster in ASM while still easy to understand.
 \ Using these primitives and the VDP words CAMEL99 creates the rest of
 \ video screen control in Forth.
 
 \ CURSOR POSITION MANAGEMENT
-\ We have chosen to track the VDP SCREEN ADDRESS of the screen's ROW.
+\ We track the VDP SCREEN ADDRESS of the screen's ROW.
 \ The means we don't have to multiply ROW x COL to get the cursor position.
-\ We just do VDP_ADR+COL = VPOS which should be a little faster.
+\ We do VDP_ADR+COL = VPOS which is a little faster.
 
 CODE: VPOS   ( -- VDP-addr)             \ return the video position (screen address) VADR+VCOL
               TOS PUSH,                 \ make some space
@@ -1470,26 +1428,26 @@ CODE: BS     ( n -- )                  \ do 'n' backspaces to the cursor positio
 @@1:          TOS POP,
               NEXT,
               END-CODE
-              
+
 CODE: C/L@   ( -- n )                  \ this is used 7 times in the KERNEL. saves 14 bytes
              TOS PUSH,                 \ and is 5 times faster than C/L @
             _C/L @@ TOS MOV,
              NEXT,
              END-CODE
 
-\ needed this little word to make VCHAR go faster
-l: _VLIM     BSS 2
-\ CODE: VLIM@ ( -- n )
-\             TOS PUSH,
-\            _VLIM @@ TOS MOV,
-\             NEXT,
-\             END-CODE
+\ make VCHAR go faster \ clip vertical value in VCHAR
+CODE: VCLIP   ( lim char addr -- lim char addr)
+             TOS  2 (SP) CMP,
+             @@1 JLE,
+             2 (SP)  TOS SUB,
+@@1:         NEXT,
+             END-CODE
 
 \ ===================================================================
 CR .( KEY? )
 
 \ Camel99 interface to KSCAN
-CODE: KEY?    ( -- ?)                    \ *WARNING* it takes 703uS for this crazy key scan to work
+CODE: KEY?    ( -- ?)                    \ *WARNING* it takes 703uS for key scan to work
               TOS PUSH,
               TOS CLR,                   \ TOS will be our true/false flag
               KEYUNIT @@ CLR,            \ unit#=0 ie: default keyboard layout, and clear keyval
@@ -1501,10 +1459,9 @@ CODE: KEY?    ( -- ?)                    \ *WARNING* it takes 703uS for this cra
               000E @@ BL,                \ call ROM keyboard scanning routine (@ >000E)
               R2 R11 MOV,                \ restore GPL R11
               8300 LWPI,                 \ return to Forth's workspace
-
               837C @@ R0 MOVB,           \ read GPL status byte
-              R0 3 SLA,                  \ Flag value is >20, shift 3 bits sets carry flag if true
-              @@1 JNC,                   \ IF No key was pressed return to Forth
+              R0 2000 ANDI,
+              @@1 JEQ,
               TOS SETO,                  \ Key pressed: set flag to true
               SCRTO @@ CLR,              \ and reset TI system screen timeout counter
               2 LIMI,
@@ -1524,21 +1481,18 @@ CODE: CURS@   ( -- char)   \ return cursor or space for flashing cursor
 
 \ ===================================================================
 CODE: BYE    ( -- )
-              2 LIMI,
-              83E0 LWPI,                \ switch to GPL workspace registers
               0000 @@ BLWP,             \ ROM reset vector is at 0000
               END-CODE
 
-CODE: PAUSE   ( -- )                    \ MULTI-TASKER switcher does nothing right now
-              NEXT,                     \ we will patch NEXT, with the switcher word
+CODE: PAUSE   ( -- )                    \ MULTI-TASKER switcher place holder
+              NEXT2 CFA!                \ patch CODE address with NEXT (replace for multi-tasking)
               END-CODE
-
 
 \ : >DIGIT  DUP 9 > 7 AND + 30 + ;      \ 1/2 size in assembler, 4X faster
 CODE: >DIGIT  ( n -- c)                 \ convert n to ascii digit c
               TOS 9 CMPI,
-              @@1 JLE,                  \ is n<=9
-              TOS  7 ADDI,              \ number is not base 10,
+              @@1 JLE,                  \ if n<=9 jump to convert it
+              TOS  7 ADDI,              \ else number is not base 10, add 7
 @@1:          TOS 30 ADDI,              \ add 30 to create ASCII value
               NEXT,
               END-CODE
