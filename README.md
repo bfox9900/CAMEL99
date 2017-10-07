@@ -9,7 +9,7 @@ Files in the LIB\ folder with the extension .FTH  can be pasted into the CLASSIC
 
 Optional Binary Programs
 ------------------------
-We have also added KERNEL99 which is a minimal system running in 40 column text mode.
+In the BIN folder we have added KERNEL99 which is a minimal system running in 40 column text mode. There is also MULTICAM a TI-99 program binary that includes the GRAPHICS library and the multi-tasking code. Multicam is required to load the SPRITE demo program.
 
 Multitasking Version
 --------------------
