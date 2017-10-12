@@ -1,6 +1,5 @@
-\ GRAPHICS mode and TI BASIC functions for xfc99 Cross-compiler
-\ uses 818 bytes of expansion memory
-
+\ GRAPHIX2 sets GRAPHICS mode and TI BASIC functions for xfc99 Cross-compiler
+\ 
 \ TI-BASIC color values are the machine values + 1
 \ CAMEL99 values are the same as TI BASIC
 \
@@ -9,13 +8,15 @@
 \                Removed charset coloring from Screen. Much simpler. DUH!
 \                Remove sprite table references from this file. Move to Sprites.fth
 
-\ Sept 18, 2017  changed CHARDEF, CHARPAT to use data buffer with integers
+\ GRAPHIX2 CHANGES VS ORIGINAL
+\ Sept 18, 2017  changed CHARDEF, CHARPAT to use data buffer (ie: a pointer) for pattern data
 \                Removed V@, V!, HEX" BIN"
-\                Example: CREATE SHAPE  00FF , F0F0 , 0F0F , 00FF
-\                         SHAPE 65 CHARDEF
+\ New way Example: 
+\       CREATE SHAPE  00FF , F0F0 , 0F0F , 00FF  ( put pattern data in memory. LABEL= SHAPE)
+\       SHAPE 65 CHARDEF       ( pass the address of SHAPE on the stack with char# to CHARDEF)
 
 
-\ Code Color  (same as TI BASIC for ease of converts to Forth)
+\ Code Colors  (same as TI BASIC for ease of converts to Forth)
 \  1   Transparent    9    Medium Red
 \  2   Black         10    Light Red
 \  3   Medium Green  11    Dark Yellow
@@ -47,7 +48,7 @@ TARGET-COMPILING
 : ?SCR   ( vdpadr -- ) C/SCR @ CHAR+ > IF T." screen adr" ABORT THEN  ;
 
 (  TI hardware needs colors combined into 1 byte. This word does it)
-\ : >BYTE  ( nibble nibble -- byte ) 04 LSHIFT + ;  ( used once)
+\ : >BYTE  ( nibble nibble -- byte ) 04 LSHIFT + ;  ( removed: only used once)
 
 ( takes fg nibble, bg nibble, convert to TI hardware #s)
 ( test for legal values, and combine into 1 byte)
@@ -122,7 +123,7 @@ TARGET-COMPILING
          1- ?COLOR              \ convert TI-BASIC color to VDP color and test if valid
  ( -- n) 7 VWTR  ;              \ set screen colour in Video register 7
 
-( NOT like TI-BASIC: Changes to familiar CYAN screen)
+( Looks like TI-BASIC: Changes to familiar CYAN screen)
 : GRAPHICS  ( -- )
              1 VMODE !          \ call this video mode 1
              0 380  0 VFILL     \ erase the entire 40 col. screen space
