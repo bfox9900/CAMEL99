@@ -1,0 +1,69 @@
+\ ========================================================================
+\ T O O L S
+
+Forth HEX CR ." Tools..."
+
+\ bounds is just so handy and in ASSEMBLER
+\ it is the same size as using 'OVER + SWAP' (6 bytes)
+CROSS-ASSEMBLING
+CODE: BOUNDS ( adr len -- adr2 adr1)
+             *SP R1 MOV,
+              TOS *SP ADD,
+              R1 TOS MOV,
+              NEXT,
+              END-CODE
+
+TARGET-COMPILING
+: ?          ( adr -- ) @ . ;
+
+: DEPTH      ( -- n )   SP0 SP@ CELL+ - 2/  ;
+
+\ .s is ccmplicated with TOS in a register
+: .S         DEPTH IF   0 DEPTH 2-  DO I PICK  U. -1 +LOOP  THEN  ;
+
+: ?BREAK    ( -- ) ^C? IF CR T." ^C *BREAK*"  20 MS ABORT THEN  ;   \ ABORT if control C key is pressed
+
+: WORDS     ( -- )
+             CR
+             0         ( word counter on stack)
+             LATEST @
+             BEGIN  PAUSE
+                DUP
+                COUNT TYPE SPACE  \ camel forth NFA is clean :-)
+                SWAP CHAR+ SWAP   ( -- cntr addr )
+                NFA>LFA @ DUP
+                ?BREAK
+             0=
+             UNTIL
+             DROP
+             CR U. SPACE t." words" ;
+
+-1 [IF]
+
+\ : U.R   ( u n -- )  >R  0 <# #S #> ( adr len -- ) R> OVER - SPACES TYPE ;
+
+\ BFox DUMP looks like dos debug, but without segment address
+\ modified for TI-99 40 column screen
+
+: .####       ( n --)     S>D <# # # # # #> TYPE ;
+
+: .ASCII      ( adr n --)    \ print ascii values or '.' for non-printable chars
+              BOUNDS
+              DO
+                 I C@ DUP
+                 BL 1-  80 WITHIN       \ check for printable char (from SPACE to ASCII '~')
+                 0= IF DROP  T[CHAR] .  \ replace unprintable chars with '.'
+                 THEN EMIT
+              LOOP ;
+
+: DUMP        ( offset n -- )
+               BOUNDS                 \ 'I' is the address pointer
+               DO PAUSE
+                  CR @
+                  I  .####  T[CHAR] : EMIT                           \ print the adr
+                  I  8  BOUNDS DO  SPACE I @ .#### 2 +LOOP SPACE    \ print 8 bytes of memory
+                  I  8  .ASCII                                        \ print 8 ascii format BYTES
+                  ?BREAK
+               8 +LOOP                                               \ increment the offset address by 8
+               CR ;
+[THEN]

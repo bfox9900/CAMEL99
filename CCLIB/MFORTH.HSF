@@ -1,0 +1,43 @@
+\ machine forth primitives
+
+\ !A 0 pop T to [A]
+\ B@A 0 push [A]0-7 to T
+\ B!A 0 pop T0-7 to [A]0-7
+\ @A+ 0 push [A] to T, add 4 to A
+\ !A+ 0 pop T to [A], add 4 to A
+\ B!A+ 0 pop T0-7 to [A]0-7, add 1 to A
+
+CROSS-ASSEMBLING
+
+CODE: A! ( n -- )        \ A! 0 pop T to A
+         TOS R14 MOV,
+         TOS POP,
+         NEXT,
+         END-CODE
+
+CODE: A@ ( -- n )        \ A@ 0 push A to T
+         TOS PUSH,
+         R14 TOS MOV,
+         NEXT,
+         END-CODE
+
+CODE: @A  ( -- n)        \ push [A] to T
+          TOS PUSH,
+         *R14 TOS MOV,
+          NEXT,
+          END-CODE
+
+CODE: @A+ ( -- n)        \ push [A] to T, add 2 to A
+         TOS PUSH,
+         *R14+ TOS MOV,
+         NEXT,
+         END-CODE
+
+CODE: B@A+              \ push byte at [A] to T, add 1 to A
+         TOS PUSH,
+        *R14+ TOS MOVB,
+         TOS 8 SRL,
+         NEXT,
+         END-CODE
+
+TARGET-COMPILING 

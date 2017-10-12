@@ -1,0 +1,53 @@
+\ ========================================================================
+\ T A R G E T   B R A N C H   C O M P I L E R S
+
+\ These versions RUN IN THE TARGET system to compile loops and branches in the TI-99
+\ CAMEL99 uses compile time checking for completion of IF ELSE THEN, DO/LOOP etc.
+
+TARGET-COMPILING
+: AHEAD    ( -- addr)  HERE 0 , ;           \ these make the code look correct
+: BACK     ( addr -- ) HERE - , ;
+: RESOLVE  ( addr -- ) HERE OVER - SWAP ! ;
+
+TARGET-COMPILING
+: IF          ( ? -- ) *?BRANCH , HERE 0 , 2 ;   XIMMEDIATE
+: THEN        ( -- ) ?COMP  2 ?PAIRS HERE OVER - SWAP ! ; XIMMEDIATE
+: ELSE        ( -- ) 2 ?PAIRS  *BRANCH , HERE 0 , SWAP 2 T[COMPILE] THEN 2 ; XIMMEDIATE
+
+\ ========================================================================
+\ I N F I N I T E   L O O P   C O M P I L E R S
+: AGAIN       ( -- ) 1 ?PAIRS *BRANCH ,  HERE - ,   ;      XIMMEDIATE
+: BEGIN       ( -- addr n) ?COMP HERE  1  ;               XIMMEDIATE
+: WHILE       ( ? -- ) T[COMPILE] IF  2+  ;               XIMMEDIATE
+: REPEAT      ( -- )   2>R  T[COMPILE] AGAIN 2R> 2- T[COMPILE] THEN ; XIMMEDIATE
+: UNTIL       ( ? -- ) 1 ?PAIRS *?BRANCH ,  HERE - ,   ;   XIMMEDIATE
+
+\ ========================================================================
+\ F I N I T E   L O O P   C O M P I L E R S
+: DO          ( -- ) COMPILE <DO>   HERE 3  ;             XIMMEDIATE
+: ?DO         ( -- ) COMPILE <?DO>  HERE 3  ;             XIMMEDIATE
+
+: LOOP        ( -- ) 3 ?PAIRS COMPILE <LOOP>  HERE - ,  ;     XIMMEDIATE
+: +LOOP       ( -- ) 3 ?PAIRS COMPILE <+LOOP> HERE - ,  ;     XIMMEDIATE
+\ ========================================================================
+\ F I N I T E   L O O P   C O M P I L E R S
+
+\ got around to including Brad's LEAVE mechanism  Aug 2017 BF
+
+: >L          ( x -- ) ( L: -- x )   \  push to leave stack
+               2 LP +!  LP @ ! ;        ( L stack grows up)
+
+: L>          ( -- x )  ( L: x -- ) \  pop from leave stack
+               LP @ @   -2 LP +! ;
+
+\ This is a common factor of LOOP and +LOOP.
+: ENDLOOP     ( adrs xt -- ) ( L: 0 a1 a2 .. aN -- )
+\              COMPILE BRANCH BACK   \  backward loop
+              BEGIN  L> ?DUP
+              WHILE  RESOLVE
+              REPEAT ;
+
+: LEAVE       ( -- )  ( L: -- adrs )
+              COMPILE UNLOOP           \ collapse stack frame
+              COMPILE BRANCH AHEAD ( -- here) >L  \ compile empty branch, push here >L
+              ; XIMMEDIATE

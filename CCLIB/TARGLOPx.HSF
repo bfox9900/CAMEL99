@@ -1,0 +1,55 @@
+\ ========================================================================
+\ T A R G E T   B R A N C H   C O M P I L E R S
+
+\ These versions RUN IN THE TARGET system to compile loops and branches in the TI-99.
+\ CAMEL99 uses compile time checking for completion of IF ELSE THEN, DO/LOOP etc.
+
+TARGET-COMPILING 
+\ these make the code look clearer
+: AHEAD    ( -- addr)  HERE   0 , ;            \ put HERE on stack, compile empty cell
+: BACK     ( addr -- ) HERE   - , ;
+: RESOLVE  ( addr -- ) HERE OVER - SWAP ! ;
+
+\ LEAVE stack per CAMEL Forth.
+\ Initialized with QUIT.  SEE: VARIABLE: L0 in CAMEL99
+: >L          ( x -- ) ( L: -- x )   \  push x to leave stack
+              2 LP +!  LP @ ! ;        ( L stack grows up)
+
+: L>          ( -- x )  ( L: x -- ) \  pop x from leave stack
+              LP @ @   -2 LP +! ;
+
+\ NOTE: We MUST put RAKE here because it uses the cross-compiler's 
+\       WHILE/REPEAT loop. We cannot cross compile loops in our code AFTER we 
+\       define the TARGET system LOOPS below.  
+\       CAMEL Forth calls this ENDLOOP... but it RAKEs the LEAVEs. Get it?
+
+: RAKE  ( addr xt -- ) ( L: 0 a1 a2 .. aN -- )
+           BEGIN  L> ?DUP WHILE  RESOLVE  REPEAT ;  XIMMEDIATE
+
+TARGET-COMPILING
+: IF          ( ? -- ) COMPILE ?BRANCH  AHEAD 2 ;   XIMMEDIATE
+: THEN        ( -- )  ?COMP  2 ?PAIRS RESOLVE ; XIMMEDIATE
+: ELSE        ( -- )  2 ?PAIRS  COMPILE BRANCH  AHEAD SWAP 2 T[COMPILE] THEN 2 ; XIMMEDIATE
+
+\ ========================================================================
+\ I N F I N I T E   L O O P   C O M P I L E R S
+: AGAIN       ( -- ) 1 ?PAIRS COMPILE BRANCH BACK   ;     XIMMEDIATE
+: BEGIN       ( -- addr n) ?COMP HERE  1  ;               XIMMEDIATE
+: WHILE       ( ? -- ) T[COMPILE] IF  2+  ;               XIMMEDIATE
+: REPEAT      ( -- )   2>R  T[COMPILE] AGAIN 2R> 2- T[COMPILE] THEN ; XIMMEDIATE
+: UNTIL       ( ? -- ) 1 ?PAIRS COMPILE ?BRANCH BACK  ;   XIMMEDIATE
+
+\ ========================================================================
+\ F I N I T E   L O O P   C O M P I L E R S
+: DO          ( -- ) COMPILE <DO>  HERE 0 >L ;          XIMMEDIATE
+: ?DO         ( -- ) COMPILE <?DO> HERE 0 >L ;          XIMMEDIATE
+
+: LOOP        ( -- ) ( 3 ?PAIRS) COMPILE <LOOP>  BACK  RAKE ; XIMMEDIATE
+: +LOOP       ( -- ) ( 3 ?PAIRS) COMPILE <+LOOP> BACK  RAKE ; XIMMEDIATE
+
+: LEAVE       (  -- ) \ L: -- adrs
+              COMPILE UNLOOP
+              COMPILE BRANCH AHEAD >L   \ unconditional forward branch
+              ; XIMMEDIATE              \ 2 is the error check to a matching THEN
+    
+

@@ -1,0 +1,100 @@
+\ Faster Keyboarding reading routines
+\ *--------------------------------------------
+\ * Quick-and-dirty check to see if a key is pressed.
+\ * If not return in a hurry,
+\ * else call the standard scanning routine.
+\ * Uses R1, R4 (tos) and R12
+\  Code source Thierry Nouspikel
+\ *--------------------------------------------
+\
+\ NOTE: KSCAN in ROM is just too darn slow for multi-tasking
+\       I need a way to scan for keys and PAUSE to new task.
+
+[CC] HEX
+CROSS-ASSEMBLING
+CODE: ?KEY ( -- ?)              \ check if key pressed, ?=0 means no key
+           TOS        PUSH,
+           R1         CLR,      \ Start with column 0
+@@1:       R12  0024  LI,       \ R12-address for column selection
+           R1   3     LDCR,     \ Set 3 bits
+           R12  0006  LI,       \ R12-address to read rows
+           TOS        SETO,     \ set all bits
+           TOS  8     STCR,     \ Get 8 row values
+           TOS        INV,      \ outputs are low active
+           @@2        JNE,      \ A key was pressed
+           R1   0100  ADDI,     \ Next column
+           R1   0600  CMPI,     \ Are we done
+           @@1        JNE,      \ Not yet
+           NEXT,                \ return to Forth
+
+@@2:       SCRTO @@   CLR,      \ Reset TI system screen timeout counter
+           NEXT,                \ return to Forth
+           END-CODE
+
+: QTEST   BEGIN ?KEY 0= UNTIL      
+          BEGIN ?KEY DUP . 0= UNTIL ;
+
+: KTEST   BEGIN ?KEY . AGAIN ;
+
+-1 [IF]
+\ TI-99 KSCAN ROM routine that scans keyboard
+CODE: KSCAN    ( -- c)      \ *WARNING* it takes 703uS for key scan to work
+           KEYUNIT @@ CLR,      \ unit#=0 ie: default keyboard layout, and clear keyval
+           0          LIMI,     \ stop interrupts
+           83E0       LWPI,     \ switch to GPL workspace
+           R11 R2     MOV,      \ save GPL R11 to R2. R2 seems unused by GPL at this point
+           000E @@    BL,       \ call ROM keyboard scanning routine (@ >000E)
+           R2 R11     MOV,      \ restore GPL R11
+           8300       LWPI,     \ return to Forth's workspace
+           SCRTO @@   CLR,      \ and reset TI system screen timeout counter
+           2          LIMI,
+@@1:       NEXT,
+           END-CODE
+
+\ CODE: KEY?  ( -- ?)   \ FAST search for key press. direct to hardware
+\           SCRTO @@ CLR,        \ and reset TI system screen timeout counter
+\           TOS        PUSH,
+\           R1         CLR,      \ Start with column 0
+\ @@1:       R12  0024  LI,       \ R12-address for column selection
+\           R1   3     LDCR,     \ Select a column
+\           R12  0006  LI,       \ R12-address to read rows
+\           TOS        SETO,     \ Make sure all bits are 1
+\           TOS  8     STCR,     \ Get 8 row values
+\           TOS        INV,      \ Since pressed keys read as 0
+\           @@2        JNE,      \ A key was pressed
+\           R1   0100  ADDI,     \ Next column
+\           R1   0600  CMPI,     \ Are we done
+\           @@1        JNE,      \ Not yet
+\ @@2:       NEXT,
+\           END-CODE
+
+TARGET-COMPILING
+VARIABLE: KK
+: QKEY        ( -- char)                       \ simple non-repeating KEY
+              BEGIN ?KEY 0= UNTIL             \ seems to need clearing before it works ??
+              BEGIN
+                10 MS                         \ multi-tasking switch & delay
+                CURS@ VPOS VC!                 \ show the flashing cursor
+                ?KEY
+                ?DUP
+              UNTIL                            \ wait for key press
+              KK !
+              BL VPOS VC! ;                    \ erase cursor
+[THEN]
+
+\ High level: input/output                     (c) 31mar95 bjr
+\ : QACCEPT      ( c-addr +n -- +n')              \ get line from terminal
+\              OVER + 1- OVER
+\              BEGIN  QKEY DUP 0D <>             \ assumes we use PASCAL keybrd (#4)
+\              WHILE
+\                DUP EMIT
+\                DUP 8 =                        \ test for back-space character
+\                IF   DROP 1-  >R OVER R> UMAX  \ move the buffer pointer back
+\                     2 BS SPACE  1 BS          \ BF mod: handle backspace on the Video screen
+\
+\                ELSE OVER C!  1+ OVER UMIN
+\                THEN
+\              REPEAT
+\              DROP NIP SWAP -  ;
+
+              

@@ -1,0 +1,223 @@
+\ TASKS99.HSF for CAMEL99                               06JAN2017 Brian Fox
+
+\ May 15 2017  RE-wrote for use with new Kernel that includes USER variables
+
+[undefined] XASSEMBLER [IF] ."  **This is for XFC99.EXE cross compiler"
+                            cr ." Compile halted."  ABORT [THEN]
+
+\ This multi-tasker takes advantage of the unique TMS9900
+\ memory to memory architecure to create a 20uS task switcher.
+
+\ WP in the 9900 CPU points to the current WORKSPACE which is normally
+\ just the registers.  We extend the concept to include a set of
+\ 15 USER VARIABLES and space for both stacks right above the registers.
+
+\ *Therefore the WP becomes the USER POINTER (UP) of a conventional Forth multi-tasker.
+
+\ Using WP to point to the USER area also lets us use the Workspace register
+\ architecture futher. We can use registers 13,14 and 15 to link to another
+\ workspace and use the RTWP instuction to change tasks in 1 instruction!
+\ A very neat trick.
+\
+\ ALSO, the registers become user variables 0..15 of each task
+
+\        ************* WARNING ****************
+\ BLWP/RTWP R13 and R14 have been stolen by this MULTI-TASKER.
+\ If you want to write code words that use BLWP/RTWP you must
+\ save the contents of R13 and R14 before using BLWP
+
+\ The simplest way in this Forth is to use the return stack:
+\  R13 RPUSH,
+\  R14 RPUSH,
+\  WKSPX BLWP,       call your new workspace vector
+\   R13 RPOP,
+\   R14 RPOP,
+
+\ =======================================================================
+\ CAMEL99 MULTI-TASKING USER AREA
+\ -----------------------------------------------------------------------
+\   0 USER R0   LOCAL general purpose register     ( workspace begins)
+\   1 USER R1   LOCAL general purpose register
+\   2 USER R2   LOCAL general purpose register
+\   3 USER R3   LOCAL general purpose register
+\   4 USER R4   LOCAL Top of stack cache
+\   5 USER R5   LOCAL overflow for mult. & div.,       // general purpose register (used by NEXT)
+\   6 USER R6   LOCAL parameter stack pointer ('SP')
+\   7 USER R7   LOCAL return stack pointer    ('RP')
+\   8 USER R8   LOCAL Forth working register  ('W')    // general purpose register in code words
+\   9 USER R9   LOCAL Forth interpreter pointer ('IP)
+\  10 USER R10  LOCAL Forth's "NEXT" routine cached in R10
+\  11 USER R11  LOCAL 9900 sub-routine return register // general purpose register in code words
+\  12 USER R12  LOCAL 9900 CRU register                // general purpose register in code words
+\  13 USER R13  LOCAL task link
+\  14 USER R14  LOCAL Program counter: ALWAYS runs TSTAT routine
+\  15 USER R15  LOCAL Status Register
+\ ------------------------------------------------------------------------
+\  16 USER TFLAG    LOCAL task's awake/asleep flag
+\  17 USER JOB      contains XT of Forth word that runs in this task
+\  19 USER VAR3
+\  21 USER VAR4
+\  22 USER VAR5
+\  23 USER VAR6
+\  24 USER VAR7
+\  25 USER VAR8
+\  26 USER VAR9
+\  27 USER VAR10
+\  28 USER VAR11
+\  29 USER VAR12
+\  30 USER VAR13
+\ -----------------------------------------------------------------------
+\   TASK Parameter stack base address 20 cells (grows downwards)
+\   TASK Return stack base address    20 cells (grows downwards)
+\ =======================================================================
+
+\ Each task has a Process ID (PID)
+\ In this system we use the workspace address as the PID
+
+CROSS-ASSEMBLING
+ CODE: MYSELF ( -- PID)         \ return my "Process ID"
+            TOS PUSH,
+            TOS STWP,           \ fetch the cpu WP register to Forth TOS
+            NEXT,
+            END-CODE
+
+8300 CONSTANT: USER0            \ user0 is the main Forth task workspace
+
+\ calc. size of task memory block (168 bytes)
+[CC] DECIMAL
+     15 cells                   \ register space
+     28 cells +                 \ 28 user variables space
+     20 cells +                 \ parameter stack
+     20 cells +                 \ return stack
+     2+                         \ 1 cell extra for safety
+[TC] CONSTANT: USIZE            \ "user area" size
+
+
+TARGET-COMPILING
+\ name the CPU registers in the USER VARIABLE space
+  12 USER: 'SP             \ the task's Forth SP register
+  14 USER: 'RP             \ the task's Forth RP register
+  18 USER: 'IP             \ the task's Forth IP register
+
+\ these registers are used by RTWP to change context
+  26 USER: TLINK           \ R13 = linked task wksp
+  28 USER: TPC             \ R14 = linked task program counter
+  30 USER: TST             \ R15 = linked task status register
+
+
+\ T A S K   S W I T C H E R
+\ ========================================================================
+\ EXPLANATION OF THE MULTI-TASKER FOR TMS9900
+
+\ Forth multi-taskers create a word, YIELD, that switches from one task 
+\ "context"  to the next "context".  TMS9900 uses a fantastic method to 
+\ hold context called the Workspace.
+\ CAMEL99 initializes the workspace of each task as if it had been called
+\ by BLWP. Each workspace has it's return register set to point to the 
+\ previous task.  With all the workspaces pointing in a circle we can use 
+\ the RTWP instruction to hop from one to next to the next very quickly.
+
+\ But TMS9900 created a problem. The RTWP instruction will change context
+\ immediately given an address and program counter in R13 and R14.
+\ This is different than conventional round robin where YIELD remains in a
+\ loop testing each task in the linked list, only leaving the loop when a
+\ task is awake. (tflag<>0)
+
+\ SOLUTION : *Divide YIELD into 2 parts*
+\ Part1 : YIELD
+\         Do the Forth style context switch at appropriate code boundaries.
+\         In this case it's just one instruction. RTWP.
+
+\ Part2 : TSTAT
+\         Load R14 (initial PC register) of each task with the address of the rest 
+\         of YIELD (TSTAT)
+\         TSTAT will run after the RTWP instruction hops to the new workspace.
+\         TSTAT tests it's own TLAG variable to see if it's awake
+\         If the task is asleep TSTAT jumps back to YIELD otherwise it's runs NEXT
+\         which runs the Forth system for the awake task we just entered.
+\
+\ *Addressing the workspace registers and user variables with WP uses index# x 2
+\ example:  R2 is accessed with 4 (R1) ...
+CODE: YIELD  ( -- )
+              BEGIN,                 \ CURRENT TASK:
+                 RTWP,               \ one instruction switches context        14
+\ -----------------------------------------------------------------------------------------
+l: _TSTAT        R1  STWP,           \ NEXT TASK: store NEW workspace in R1     8
+                 32 (R1) R0 MOV,     \ Read local TFLAG to see if I am awake   28
+              NE UNTIL,              \ loop thru tasks until TFLAG is <> 0     10
+              NEXT,                  \ if task is awake, run next            \ 60 *.333 = 20uS
+              END-CODE
+
+\ convert labels into Forth constants for the addresses of the code
+[CC] HEX
+NEXT2 [TC] constant: NEXT2            \ convert EQU to Forth constant
+
+[CC]
+T' YIELD 2+ [TC] constant: 'YIELD     \ *NOTE* we need the code address, not the code field addr.
+       _TSTAT    constant: 'TSTAT     \ convert code label to Forth constant
+
+[CC] DECIMAL
+TARGET-COMPILING
+\ PID = process ID.  It is the address of the tasks' user area memory block
+: LOCAL    ( PID uvar -- addr' ) MYSELF - + ;     \ usage:  TASK1 'SP LOCAL @
+: SLEEP    ( PID -- )  0 SWAP TFLAG LOCAL ! ;     \ put PID to sleep
+: WAKE     ( PID -- ) -1 SWAP TFLAG LOCAL ! ;     \ wake up PID
+
+\ turn multi-tasking on or off by changing the CODE address in PAUSE
+: SINGLE     NEXT2  T['] PAUSE ! ;   \ disable multi-tasking
+: MULTI     'YIELD  T['] PAUSE ! ;   \ enable multi-tasking
+
+( *** YOU  M U S T  use INIT-MULTI before multi-tasking ***)
+: INIT-MULTI ( -- )
+                MYSELF tlink !              \ Set my 'link to my own WKSP
+                'TSTAT TPC !                \ set my task PC (R14) to run TSTAT
+                MYSELF WAKE   ;             \ mark myself awake
+
+\ Make a copy of the root Forth USER area into a new workspace. needs 168 bytes (USIZE)
+: FORK ( PID -- )
+       DUP >R                               \ copy PID to RSTACK
+      ( PID) USIZE 0 FILL                   \ erase user area
+       USER0 R@ 60 CMOVE                    \ copy USER0 regs & vars to taskaddr
+                                            \ -this sets R14 to TSTAT routine (IF init-multi was run)
+                                            \  and it sets R10 to NEXT2
+
+       R@ 100 +  R@ 'SP LOCAL !             \ set Rstack pointer to this user area
+       R@ 140 +  R@ 'RP LOCAL !             \ set Pstack pointer to this user area
+
+\ add this task to round-robin list of task s
+       tlink @                 ( -- link)   \ get the current link round-robin link
+       R@ tlink !                           \ replace it with addr of new task
+       R@ tlink LOCAL !                     \ store the copy from above into new task's space
+
+       R> SLEEP  ;                          \ mark this new task as asleep
+
+: ASSIGN ( xt pid -- )
+           dup  JOB local      ( -- xt PID addr )  \ get the address of JOB for task PID
+           over 'IP local !    \ store addr of JOB in the PID's instruction pointer
+  ( -- xt pid)  JOB local ! ;  \ store the XT in the PID's JOB user var.
+
+\ : RESTART  ( PID) 2DUP JOB LOCAL SWAP 'IP LOCAL !  WAKE ;
+
+TARGET-COMPILING
+
+\ USAGE:
+\ ---------------------------------------------
+\ INIT-MULTI
+\ CREATE: TASK1   USIZE ALLOT
+\ CREATE: TASK2   USIZE ALLOT
+
+\ : THING1  BEGIN   1 C000 +!  PAUSE AGAIN  ;
+\ : THING2  BEGIN  -1 C002 +!  PAUSE AGAIN ;
+
+\   TASK1 FORK   ( make a copy of USER0 called task1)
+\   TASK2 FORK
+
+\   T' THING1 TASK1 ASSIGN
+\   T' THING2 TASK2 ASSIGN
+
+\   MULTI       ( enable task switcher)
+\   TASK1 WAKE
+\   TASK2 WAKE
+
+[CC] HEX [TC]
+
