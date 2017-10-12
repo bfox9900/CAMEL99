@@ -1,13 +1,23 @@
 ( VALUEs for CAMEL99 )
 
-: >BODY    2+ ;
+( usage:  0 VALUE W  )
+(        99 TO W )
 
-: VALUE   CONSTANT ;
+: VALUE   CONSTANT ;   ( syntax sugar )
 
-: (TO)    ( n cfa -- ) >BODY ! ;
+: (TO)    ( n <text> -- ) >BODY ! ;
 
 : TO      ( n -- )
            STATE @
-           IF   [COMPILE] [']  COMPILE (TO)
-           ELSE '  (TO)
+           IF   POSTPONE [']  POSTPONE (TO) \ compiling action
+           ELSE '  (TO)                     \ interpret action
            THEN ; IMMEDIATE
+
+\ : (+TO)   ( n <text> -- ) >BODY +! ;
+
+\ : +TO      ( n -- )
+\           STATE @
+\           IF   POSTPONE [']  POSTPONE (+TO) \ compiling action
+\           ELSE '  (+TO)                     \ interpret action
+\           THEN ; IMMEDIATE
+
