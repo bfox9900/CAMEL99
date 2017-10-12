@@ -1108,7 +1108,7 @@ TARGET-COMPILING
               TMR!
               TEXT
               BEEP
-              T." CAMEL99 ITC Forth V2.0    B Fox 2017"
+              T." CAMEL99 ITC Forth V1.9   B Fox 2017"
               CR QUIT ;
 
 [CC]
