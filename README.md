@@ -1,11 +1,24 @@
 # CAMEL99
-Camel Forth for the TI-99
--------------------------
+Camel Forth V1.9 for the TI-99
+------------------------------
+
+Oct 7, 2017  - Version 1.9 includes POSTPONE, ;CODE and DOES>
+             - 99.2% ANS CORE compliant. Missing 1 word: ENVIRONMENT?
+             - change to CHARDEF in GRAFIX2.FTH
+             - Now uses pointer to data, not stack data
+             - S" now uses a string POOL at >2000
+             - HEAP memory system added. Starts at >2180
+             - Target loops now in separate file. (targloop.hsf)
+               - LEAVE has been implemented per CAMEL Forth method
+               - numerous speedups and size reductions in CODE words
+             - new word: ^C? scans keyboard for control C
+                 - 4X faster than KEY?
+             - TMR! TMR@ let you use the 9901 timer for limit timing
+            - MS word uses the 9901 timer for accurate delays
 
 The file called CAMEL99 is a binary program file that should load and run on the TI-99 computer with the EDITOR/ASSEMBLER cartridge plugged into the console. The Forth system that is created is mostly true to the original Camel Forth by Brad Rodriguez but it has a few optimizations to better handle the low speed of the TI-99 computer.  Mostly notably the dictionary search has been re-written in Assembler and is called (FIND). (See: 9900FAST.HSF)
 
-At this stage it is NOT a completed system, but a cross-compiler demonstration.
-Files in the LIB\ folder with the extension .FTH  can be pasted into the CLASSIC99 TI-99 Emulator and they will compile and extend the system.
+At this stage it is NOT a completed system, but a cross-compiler demonstration. Files in the LIB\ folder with the extension .FTH can be pasted into the CLASSIC99 TI-99 Emulator and they will compile and extend the system.
 
 Optional Binary Programs
 ------------------------
@@ -21,7 +34,6 @@ To RUN CAMEL99 Binary program files
 Insert the EDITOR/ASSEMBLER cartridge
 Select "Option 5":  "RUN PROGRAM FILE"
 Type:  DSK1.CAMEL99   ( or KERNEL99  or MULTICAM )
-
 
 ABOUT CAMEL99
 -------------
