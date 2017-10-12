@@ -1,120 +1,111 @@
 ( RE-ENTRANT STRING LEXICON                    OCT 8 1987 Brian Fox)
-( *798 BYTES* )
-( Written orginally to provide string functions like BASIC in      )
-( TI-Forth.  I have re-written it many times;       for HsForth    )
-( GForth, MPE Power Forth, Mark re-wrote it for Turbo Forth and )
-( now back to the TI-99 for CAMEL99.                               )
+\ re-write for CAMEL99 AUG 28 2017
 
-( Concept: All string functions return a counted string address on )
-(           the Forth parameter stack.  That address is the TOP$   )
-(           of the string stack when the function completes        )
+\ Written orginally to provide TI-BASIC string functions for TI-Forth.
+\ I have re-written it many times; for HsForth GForth, MPE Power Forth,
+\ Mark re-invented it for Turbo Forth and now I have re-written it for CAMEL99.
 
-( original version used run-time size checking.)
-( It's removed now for better speed so be careful)
+\ New Concept:
+\ Input strings are manipulated by ONLY moving pointers using addr,len.
 
-( ** Since 1987 Forth developers have learned that processing a    )
-( string on the stack as an address,length combination gives you   )
-( amazing simplicity to cut strings so this new code reflects that )
-( using assembler words called /STRING SKIP and SCAN in CAMEL Forth)
+\ Functions that output a string copy their result onto a string stack.
+\ The address of the output string is on the Forth Parameter stack.
+\ This allows string functions to feed into another string function.
 
-( July 10, 2017 DROP$ was used before defined. duh!                )
+\                --THE SECRET SAUCE --
+\ Two functions, PUT and PRINT, collapse the string stack automatically.
+\ This cleans up the intermediate strings that are created as you use the
+\ string functions after you either store or print the final result.
+\ No garbage collection required.
+
+\ original version used run-time size checking.
+\ It's removed here for more speed so be careful
+
 
 DECIMAL
-( build a string stack )
-      VARIABLE SSP     ( this is the string stack pointer )
-  256 CONSTANT MXLEN   ( 255 bytes+count=mxlen )
+\ string stack ====
+         VARIABLE SSP     \ the string stack pointer
+     255 CONSTANT MXLEN   \ 255 bytes is longest string
+MXLEN 1+ CONSTANT SSW     \ width of string stack items
 
-: NEW:     ( -- ) MXLEN SSP +! ; ( bump the string stack pointer)
-: COLLAPSE ( -- ) SSP OFF ;      ( set SSP to zero)
+: NEW:     ( -- ) SSW SSP +! ;  \ bump the string stack pointer by 256
+: COLLAPSE ( -- ) SSP OFF  ;    \ reset string stack pointer to zero
+: TOP$     ( -- ) SSP @ PAD + ;
 
-( string stack uses unallocated Dictionary memory above Forth's PAD buffer)
-: TOP$     ( -- adr) SSP @ PAD + ;
-: TOPS     ( -- addr cnt)  TOP$ COUNT ;
+\ From Wil Baden's Tool Belt [R.I.P. Wil] ====
+: C+!         ( n addr -- )   DUP >R  C@ +  R> C! ;
+: APPEND      ( addr n $ -- ) 2DUP 2>R  COUNT +  SWAP CMOVE 2R> C+! ;
+\ : PLACE     ( addr n dst$ -- ) 2DUP C! 1+ SWAP CMOVE ;  \ in CAMEL99 Kernel
+\ : APPEND-CHAR ( char caddr -- ) DUP >R COUNT DUP 1+ R> C! + C! ;
 
-( Operations to create higher level functions )
-( From Wil Baden's Tool Belt [R.I.P. Niel Baud] )
-( : PLACE     ( src n dst -- ) 2DUP C! 1+ SWAP CMOVE ; ) ( in CAMEL99 kernel now)
-: C+!         ( n addr -- )  DUP >R  C@ +  R> C! ;       ( increment a byte at addr. by n)
-: APPEND      ( addr n $ -- ) 2DUP >R >R  COUNT +  SWAP CMOVE R> R> C+! ;
-: APPEND-CHAR ( char caddr -- )  DUP >R  COUNT  DUP 1+ R> C!  +  C! ;
-: STRPUSH     ( addr cnt -- top$ ) NEW: TOP$ PLACE TOP$ ;  ( Push addr/len string to string stack)
-: ?SSP        ( -- ) SSP @ 0= ABORT" String stack underflow" ;
-: DROP$       ( -- ) ?SSP MXLEN NEGATE SSP +! ;
+\ string stack helpers ====
+: SPUSH    ( addr len -- top$ ) NEW: TOP$ DUP >R PLACE R> ;
+: ?SSP     ( -- ) SSP @ 0= ABORT" Empty $ stack" ;
+: DROP$    ( -- ) ?SSP MXLEN NEGATE SSP +! ;
 
-( functions to move strings)
-: PUSH$     ( $ -- )     COUNT NEW: TOP$  PLACE ;
-: POP$      ( $ -- )     TOP$ COUNT ROT PLACE DROP$ ;
-: COPY$     ( $1 $2 -- ) >R COUNT R> PLACE ;
-
-( string variables require DIM )
-( Example:  VARIABLE A$  25 DIM )
-: DIM   ( n -- )    DUP MXLEN > ABORT" Too big!"  ALLOT ;
-
-( now we can build the standard BASIC string functions )
+\ Replicate TI-BASIC string functions ====
 : LEN      ( $ -- n )  C@ ;
-: LEFT$    ( $ # -- top$) SWAP COUNT DROP SWAP STRPUSH ;
-: RIGHT$   ( $ #  -- top$)  >R COUNT R> OVER MIN /STRING STRPUSH ;
-: SEG$     ( $ start# char# -- top$) >R >R COUNT R> /STRING STRPUSH  R> TOP$ C!   ;
-: CPOS$     ( $ char -- $ position)  >R PUSH$ TOP$ DUP COUNT 2DUP R> SCAN NIP - NIP 1+ ; ( 1st char is 1)
-: STR$     ( n -- top$) 0 <# #S #>   STRPUSH ;
-: VAL$     ( adr$ - # ) ?NUMBER 0= ABORT" VAL$ can't convert"  ;
-: CHR$     ( ascii# -- top$ ) NEW: TOP$ 1 OVER C! 1+ C! ;
+: SEG$     ( $ n1 n2 -- top$) >R >R COUNT R> 1- /STRING DROP R> SPUSH ;
+: STR$     ( n -- top$)  DUP ABS S>D <# #S ROT SIGN #> SPUSH ;
+: VAL$     ( adr$ - # )  ?NUMBER 0= ABORT" VAL$ err"  ;
+: CHR$     ( ascii# -- top$ ) NEW: TOP$ 1 OVER C! SWAP OVER 1+ C! ;
+: ASC      ( $ -- c)   1+ C@ ;
 
-( concatenate 2 strings USAGE: A$ B$ ADD$ C$ PUT )
-: ADD$       ( $1 $2 -- top$) SWAP PUSH$  COUNT TOP$ APPEND TOP$ ;
+: &        ( $1 $2 -- top$)   \ concatenate operator
+           SWAP COUNT SPUSH >R COUNT R@ APPEND R>  ; \ A$ B$ &  PRINT
 
-: COMPARE$   ( $1 $2 -- flag)  OVER LEN 1+ S= ;
-: =$         ( $1 $1 -- flag)  COMPARE$ 0= ;
-: >$         ( $1 $2 -- flag)  COMPARE$ 0> ;
-: <$         ( $1 $2 -- flag)  COMPARE$ 0< ;
+: POS$    ( $1 $2 -- $1 $2 n )     \ return "position" of $1 in $2
+           DUP -ROT                \ copy $2 under the inputs
+           COUNT BOUNDS            \ step $2 char by char
+           DO
+             I OVER COUNT S=       \ S= part of CAMEL Forth.
+             0= IF I LEAVE THEN    \ if 0 we found a match
+           LOOP
+           NIP SWAP -  ;           \ subtract addresses to get position
 
-( and some that BASIC does not have )
-: SKIP$    ( $ char -- $ ) >R COUNT R> SKIP STRPUSH ;  ( removes leading char)
+: LEFT$    ( $ n -- top$)     >R COUNT DROP R> SPUSH ;
+: RIGHT$   ( $ n -- top$)     >R COUNT DUP R> - 0 MAX /STRING SPUSH ;
 
-( assign strings )
-: ="       ( $addr -- <text> ) ?EXEC [CHAR] " WORD SWAP COPY$ ;
-: =""      ( $addr -- ) ?EXEC OFF ;   ( don't erase, just set length to zero)
+: COPY$    ( $1 $2 -- )       >R COUNT R> PLACE ;
 
-: $.       ( $ -- )  COUNT TYPE COLLAPSE ;
+: RPT$     ( $1 u -- top$)
+            NEW:
+            SWAP COUNT ROT
+            0 ?DO
+                2DUP TOP$ LEN OVER + SSW > ABORT" RPT$>255"
+                TOP$ APPEND
+            LOOP
+            2DROP
+            TOP$ ;
 
-HEX
-( string literal creation uses ANS Forth word C" )
-( It has the unique feature that it works in immediate mode too)
-: C"       ( -- )
-            STATE @                         ( are we compiling?)
-            IF     COMPILE ,"               ( action when Compiled )
-            ELSE   22 PARSE STRPUSH   ( action when interpreted)
-            THEN ; IMMEDIATE
+: CPOS   ( char $ -- ?) COUNT ROT SCAN NIP  ;  \ much faster char position
 
-(  --THE SECRET SAUCE to be as easy as BASIC--            )
-(  ------------------------------------------------------ )
-( The following words collapse the string stack after you )
-( use them. This automatically cleans up the intermediate )
-( strings that get created as you process strings         )
-(     **THIS MEANS YOU DON'T WORRY ABOUT IT**             )
+\ compare strings also use S=
+: COMPARE$ ( $1 $2 -- flag)  OVER LEN 1+ S= ;
+: =$       ( $1 $1 -- flag)  COMPARE$ 0= ;
+\ : >$       ( $1 $2 -- flag)  COMPARE$ 0> ;  \ $1 > $2
+\ : <$       ( $1 $2 -- flag)  COMPARE$ 0< ;  \ $1 < $2
 
+( compile time string assignment)
+: ="       ( $addr -- <text> )  [CHAR] " PARSE ROT PLACE ;
+: =""      ( $addr -- ) 0 SWAP C! ;   \ sets string length to zero
 
+\ string variables need DIM to allocate more space
+: DIM      ( n -- ) DUP MXLEN > ABORT" Too big!"
+                    ALLOT ;
 
-: PUT       ( $1 $2 -- ) COPY$ COLLAPSE ;
+: PUT      ( $1 $2 -- ) COPY$ COLLAPSE ;
 
-: PRINT     ( -- )     CR $. ;
+: PRINT    ( $1 -- )   CR COUNT TYPE COLLAPSE ;       \ print on new line, clean $stack
 
+: (")      ( -- ) R> DUP COUNT + ALIGNED >R ; \ advance IP on Rstack, past end of string
 
+: "        ( -- )
+           STATE @                          \ are we compiling?
+           IF    COMPILE (") ,"             \ action when Compiled
+           ELSE  [CHAR] " PARSE SPUSH       \ action when interpreted
+           THEN ; IMMEDIATE
 
-DECIMAL
+COLLAPSE  ( initializes the string stack)
 
-( test code )
- VARIABLE A$  80 DIM
- VARIABLE B$  90 DIM
- VARIABLE C$ 200 DIM
- C" THIS IS STRING A$" A$ PUT
- C" LOOK FOR THE * IN THIS ONE" B$ PUT
- C$ =" This is the contents of the string called C$."
-
- B$ CHAR * CPOS$ LEFT$ PRINT
- B$ CHAR * CPOS$ RIGHT$ PRINT
-
-
-
-
-
+( 768 bytes)
