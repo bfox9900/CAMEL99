@@ -11,14 +11,15 @@ Oct 7, 2017  - Version 1.9 includes POSTPONE, ;CODE and DOES>
 - Target loops now in separate file. (targloop.hsf)             
 - LEAVE has been implemented per CAMEL Forth method               
 - numerous speedups and size reductions in CODE words              
-- new word: ^C? scans keyboard for control C             
-- 4X faster than KEY?                
-- TMR! TMR@ let you use the 9901 timer for limit timing            
-- MS word uses the 9901 timer for accurate delays            
+- new word: ^C? scans keyboard for control C. 4X faster than KEY?                
+- TMR! TMR@ let you use the 9901 timer for limit timing MAX duration is 325mS            
+- MS word uses the 9901 timer for accurate delays in milli-seconds           
 
 The file called CAMEL99 is a binary program file that should load and run on the TI-99 computer with the EDITOR/ASSEMBLER cartridge plugged into the console. The Forth system that is created is mostly true to the original Camel Forth by Brad Rodriguez but it has a few optimizations to better handle the low speed of the TI-99 computer.  Mostly notably the dictionary search has been re-written in Assembler and is called (FIND). (See: 9900FAST.HSF)
 
-At this stage it is NOT a completed system, but a cross-compiler demonstration. Files in the LIB\ folder with the extension .FTH can be pasted into the CLASSIC99 TI-99 Emulator and they will compile and extend the system.
+At this stage it is NOT a completed system, but a cross-compiler demonstration. V1.9 has no file interface to the TI-99 OS.
+
+Files in the LIB\ folder with the extension .FTH can be pasted into the CLASSIC99 TI-99 Emulator and they will compile and extend the system.
 
 Optional Binary Programs
 ------------------------
