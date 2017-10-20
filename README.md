@@ -80,6 +80,12 @@ This system is a work in progress by a hobbyist so you will no doubt find numero
 
 Do not hesitate to let me know a brian dot fox at foxaudioresearch dot ca
 
+TWO DIFFERENT TYPES OF LIBRARY FILES
+------------------------------------
 
+The cross compiler source files require some extra commands to control the cross-compiler and so cannot be loaded onto the TI-99 CAMEL99 Forth system.  These files end with the extension '.HSF'  (HsForth)
+
+The Library files for CAMEL99 are in the LIB folder and use the extension '.FTH'  
+For the most part, with the exception of hardware specfic extensions, the libary code is ANS Standard Forth. CAMEL99 has the CORE word set minus the word ENVIRONMENT?  About 60% of the CORE Extension word set is also part of CAMEL99.
 
 
