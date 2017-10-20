@@ -13,7 +13,11 @@ Oct 7, 2017  - Version 1.9 includes POSTPONE, ;CODE and DOES>
 - numerous speedups and size reductions in CODE words              
 - new word: ^C? scans keyboard for control C. 4X faster than KEY?                
 - TMR! TMR@ let you use the 9901 timer for limit timing MAX duration is 325mS            
-- MS word uses the 9901 timer for accurate delays in milli-seconds           
+- MS word uses the 9901 timer for accurate delays in milli-seconds 
+
+Oct 19, 2017
+- Factored (:NONAME) out of HEADER. (Idea from GForth) Created :NONAME and refactored HEADER
+- Removed duplicate code from S".  Saves 6 bytes in the binary image
 
 The file called CAMEL99 is a binary program file that should load and run on the TI-99 computer with the EDITOR/ASSEMBLER cartridge plugged into the console. The Forth system that is created is mostly true to the original Camel Forth by Brad Rodriguez but it has a few optimizations to better handle the low speed of the TI-99 computer.  Mostly notably the dictionary search has been re-written in Assembler and is called (FIND). (See: 9900FAST.HSF)
 
