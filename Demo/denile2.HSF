@@ -1,0 +1,90 @@
+\ LITERAL TRANSLATION OF DENILE.BAS using variables
+
+\ This is not how Forth normally Forth is used
+\ but it was fun to see what would happen
+\ Integer variables in Forth are like BASIC in that
+\ they are global, meaning any part of the program
+\ can get at them.
+
+\ dialect: CAMEL99 Forth V 0.9 TRAINER
+\          with extensions to help TI-BASIC PROGRAMMERS
+
+                                       \ un-rolled this loop
+HEX" 0102 0709 1F24 7F92"  65 CHARDEF  \ 20 FOR L=65 TO 70 )
+HEX" 8040 E090 F824 FE49"  66 CHARDEF  \ 30 READ Q$        )
+HEX" FF92 FF24 FF92 FF49"  67 CHARDEF  \ 40 CALL CHAR(L,Q$)
+HEX" AA55 4489 2002 4801"  68 CHARDEF  \ 50 NEXT L  )
+HEX" 0002 1735 7CFC 44AA"  69 CHARDEF  \  Camel
+HEX" 0008 081C 2A08 1414"  70 CHARDEF  \  little man
+
+HEX" 0083 C7AE FBEF BDF7" 104 CHARDEF  \ 70 CALL CHAR(104,"0083C7AEFBEFBDF7")
+HEX" 0007 8F5D F7DF 7BEF" 105 CHARDEF  \ 80 CALL CHAR(105,"00078F5DF7DF7BEF")
+HEX" 000E 1FBA EFBF F6DF" 106 CHARDEF  \ 90 CALL CHAR(106,"000E1FBAEFBFF6DF")
+HEX" 001C 3E75 DF7F EDBF" 107 CHARDEF  \ 100 CALL CHAR(107,"001C3E75DF7FEDBF")
+HEX" 0038 7CEA BFFE DB7F" 108 CHARDEF  \ 110 CALL CHAR(108,"00387CEABFFEDB7F")
+HEX" 0070 F8D5 7FFD B7FE" 109 CHARDEF  \ 120 CALL CHAR(109,"0070F8D57FFDB7FE")
+HEX" 00E0 F1AB FEFB 6FFD" 110 CHARDEF  \ 130 CALL CHAR(110,"00E0F1ABFEFB6FFD")
+HEX" 00C1 E357 FDF7 DEFB" 111 CHARDEF  \ 140 CALL CHAR(111,"00C1E357FDF7DEFB")
+
+\ ALL variables must be defined first
+VARIABLE X
+VARIABLE C
+VARIABLE T  
+VARIABLE Y
+
+32 STRING: A$    \ STRING: is not standard Forth. We made it to for you.
+32 STRING: B$    \ *BTW Strings can have any name
+32 STRING: C$
+
+: TAB ( n -- ) 0 ?DO SPACE LOOP ; \ we don't have a TAB word so make one
+
+: PYRAMID
+   A$ =""  B$ =""  C$ =""
+  14 X !                     \ 160 X=13
+   1 C !                     \ 170 C=1
+   CR X @ 1+ TAB ." AB"      \ 180 PRINT TAB(X+1);"AB"
+ BEGIN                       \ " needs a space, '&' is RPN :)
+      C$ " CC" &       C$ $! \ 190 C$=C$&"CC"
+     " A" C$ &  " B" & B$ $! \ 200 B$="A"&C$&"B"
+      CR   X @ TAB  B$ PRINT \ 210 PRINT TAB(X);B$
+      1 C +!                 \ 220 C=C+1
+     -1 X +!                 \ 230 X=X-1
+      C @ 14 =               \ 240 IF C=13 THEN 250 ELSE 190
+ UNTIL
+    0 23 68 32 HCHAR         \ 250 CALL HCHAR(24,1,68,32)
+    0 22 69 1  HCHAR         \ 260 CALL HCHAR(23,1,69)
+    1 22 70 1  HCHAR         \ 270 CALL HCHAR(23,2,70)
+    CR                       \ 280 PRINT
+    CR                       \ 290 PRINT
+    CR                       \ 295 PRINT
+    0 23 68 32 HCHAR         \ 296 CALL HCHAR(24,1,68,32)
+;
+
+: RIVER    \ flow the river loop
+    104 T !               \ 300 T=104
+    106 Y !               \ 310 Y=106
+ BEGIN
+    1 T +!                \ 320 T=T+1
+    T @ 111 >             \ 330 IF T>111 THEN 340 ELSE 350
+    IF  104 T ! THEN      \ 340 T=104
+    2 Y +!                \ 350 Y=Y+2
+    Y @ 111 >             \ 360 IF Y>111 THEN 370 ELSE 380
+    IF  104 Y ! THEN      \ 370 Y=104
+    0 21 T @ 32 HCHAR \ 380 CALL HCHAR(22,1,T,32)
+    0 22 Y @ 32 HCHAR \ 390 CALL HCHAR(23,1,Y,32)
+    100 MS
+    KEY?
+ UNTIL                    \ 400 GOTO 320
+;
+
+: RUN   \ Forth doesn't have RUN so we make one
+   CLEAR                  \ 10 CALL CLEAR
+\   4 SCREEN               \ BASIC does this, Forth only does what you say
+   13 6 5 COLOR           \ 150 CALL COLOR[10,6,5]
+                          \ Forth has different sets,
+   PYRAMID                \ 500 GOSUB PYRAMID
+   RIVER                  \ 600 GOSUB RIVERFLOW
+;
+
+
+

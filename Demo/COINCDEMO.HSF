@@ -1,0 +1,53 @@
+\ COINCIDENCE Demo.  
+
+\ NEEDS MTASK99.FTH GRAFIX2.FTH SPITES.FTH
+
+DECIMAL
+
+DELALL  \ initializes all sprite data
+
+\ color char  col row  #        vx vy  #
+\ ----------------------------------------------
+   16   42    1   1    0 SPRITE   1  0  0 MOTION
+   16   43    80 10    1 SPRITE   0  2  1 MOTION
+
+: PULSE  ( -- )  TMR@ PAUSE TMR@ - ABS 21 * ;  \ multi-tasking load tester
+
+INIT-MULTI
+
+\ make memory space for 2 tasks
+CREATE AUTOMOTION USIZE ALLOT  \ create mem block for a task
+CREATE TASK2      USIZE ALLOT 
+
+AUTOMOTION FORK                 \ init the mem block to be a task
+TASK2 FORK
+
+: REVERSE  ( n -- ) DUP  >R ]MOTION 2@   NEGATE SWAP NEGATE SWAP   R> ]MOTION 2! ;
+: STOP     ( n -- ) 0 0 ROT ]MOTION 2! ;
+
+: SPMOVER                 \ this does the SPRITE "AUTOMOTION"
+      BEGIN
+         #SPRITES @ 1+ 0  
+         DO PAUSE I  SP.MOVE LOOP
+         SP.SHOW           \ write sprite data to VDP
+         15 MS             \ wait 15ms
+       AGAIN ;
+
+: SCOPE    ( addr )  BEGIN 0 0 AT-XY @ U. KEY? UNTIL ;
+
+VARIABLE RANGE    5 RANGE !
+
+: REVERSER
+       BEGIN
+         BEGIN  PAUSE  0 1 RANGE @ COINC  UNTIL
+         HONK
+         0 REVERSE
+         1 REVERSE
+       AGAIN ;
+       
+' SPMOVER AUTOMOTION ASSIGN  \ giver the mover task a job to do
+' REVERSER TASK2 ASSIGN
+
+AUTOMOTION WAKE
+TASK2 WAKE
+

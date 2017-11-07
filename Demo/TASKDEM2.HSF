@@ -1,0 +1,105 @@
+\ CAMEL99 Forth Multi-tasking Demo #2
+\ paste into Classic 99 with mtask99.hsf installed
+
+ INIT-MULTI
+\ multi-tasker tools
+: PULSE  ( -- n)  \ returns round robin transit time
+         TMR@ PAUSE TMR@ - ABS ;   ( TMR@ reads 9901 timer)
+
+: .PULSE  PULSE  21 *  .  ." uS" ;
+
+: .AWAKE        ( ? -- ) IF ." awake"  ELSE ." sleep"  THEN ;
+
+: .LOC  ( adr -- ) LOCAL @ U. SPACE ;
+
+: .TASK  ( pid -- )
+         HEX
+         CR DUP >R U. SPACE
+         R@ 'SP .LOC
+         R@ 'RP .LOC
+         R@ 'IP .LOC
+         R> TFLAG LOCAL @ .AWAKE  ;
+
+: .HDR  ( -- )
+         CR ." PID   Pstk  Rstk   IP   Status
+         CR ." ----  ----  ----  ----  ------"  ;
+
+: .TASKS ( -- )
+       .HDR
+       1 >R    \ intial count is 1 (USER0)
+       MYSELF
+       BEGIN
+            TLINK LOCAL @  DUP MYSELF <>
+       WHILE
+            DUP .TASK
+            R> 1+ >R
+       REPEAT
+       USER0 .TASK
+       DROP DECIMAL
+       CR R> .  ."  jobs"    \ pull count off Rstack
+       CR ." Pulse=" .PULSE ;
+
+: MONITOR  PAGE BEGIN 0 6 AT-XY .TASKS  PAUSE KEY? UNTIL ;
+
+\ DEMO BEGINS
+CREATE TASK1   USIZE ALLOT
+CREATE TASK2   USIZE ALLOT
+CREATE TASK3   USIZE ALLOT
+
+TASK1 FORK
+TASK2 FORK
+TASK3 FORK
+
+DECIMAL
+CHAR * CONSTANT '*'
+CHAR ! CONSTANT '!'
+CHAR - CONSTANT '-'
+CHAR . CONSTANT '.'
+
+VARIABLE SPEED   1 SPEED !
+
+: SET_ROWS  ( n -- end start )   \ create addresses for a DO/LOOP
+            C/L @ *              \ calc. the start address
+            DUP  C/L @ 4* +  1-  \ add start to VDP address of 4 more lines less 1
+            SWAP ;
+
+\ erase 4 rows starting at row(n)
+: CLR_ROWS  ( n -- ) C/L @ *  128 BL VFILL ;
+
+: THING1
+       BEGIN
+            '*' SET# 3 1 COLOR
+            0 CLR_ROWS
+            0 SET_ROWS
+            DO
+               '.'  I  VC!   \ VC! = "video char store"
+               PAUSE         \ service tasks
+            LOOP
+            PAUSE            \ be "nice"
+       AGAIN ;
+
+: THING2
+       BEGIN
+            '-' SET# 11 1 COLOR
+            11 CLR_ROWS
+            11 SET_ROWS
+            DO
+               '-'   I  VC!
+               PAUSE
+            LOOP
+            PAUSE
+       AGAIN ;
+       
+: PGRAPH   \ bar graph of CPU loading
+        BEGIN
+            1 5 BL  32 HCHAR PAUSE
+            0 5 30  PULSE 32 MOD 1+ HCHAR
+            6 MS
+        AGAIN ;
+
+\ ' finds the execution address of a routine
+ ' THING1 TASK1 ASSIGN
+ ' THING2 TASK2 ASSIGN
+ ' PGRAPH TASK3 ASSIGN
+
+
