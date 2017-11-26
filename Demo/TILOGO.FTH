@@ -1,4 +1,4 @@
-\ TI LOGO GRAPHICS  chars patterns from Soemtimes88er
+\ TI LOGO GRAPHICS  chars patterns from Sometimes88er atariage.com
 GRAPHICS
 
 DECIMAL
