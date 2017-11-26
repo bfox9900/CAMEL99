@@ -1,6 +1,6 @@
 \ music lexicon to control TMS9919
 
-\ INCLUDE SOUND.FTH  
+\ INCLUDE SOUND.FTH
 
 DECIMAL
 \ duration control variables and values
@@ -9,7 +9,6 @@ VARIABLE OFF_TIME
 VARIABLE FEEL        \ controls the on/off time ratio
 VARIABLE TEMPO
 
-  60 CONSTANT 
 : TIMEBASE  ( -- d) 43392 3 ;           \ = 43392 3  ( double number)
 
 : ATTENUATE ( n -- ) ATT @ OR SND! ;    \ faster than using DB
@@ -34,7 +33,7 @@ VARIABLE TEMPO
 
 : NOTE      ( -- MS ) ON_TIME @ OFF_TIME @ + ;           \ return full duration of current note
 
-: DURATION!    ( MS -- )  FEEL @ EXPRESSION ;
+: DURATION! ( MS -- )  FEEL @ EXPRESSION ;
 
 : 5%       ( -- ) 5 / ;
 : 10%      ( n -- n ) 10 / ;
@@ -44,7 +43,7 @@ VARIABLE TEMPO
 : 50%+      ( N -- N+50%)  DUP 50% + ;    \ dotted notes have 50% more time
 
 : BPM       ( BPM -- )  \ set tempo in beats per minute
-            TEMPO !      \ this patches a constant
+            TEMPO !
             WHOLENOTE DURATION! ;
 
 : NORMAL      NOTE 3 % FEEL ! ;
@@ -74,6 +73,7 @@ VARIABLE TEMPO
 
 \ FREQ  NATURAL    FREQ  ACCIDENTAL    EN-HARMONIC
 \ -------------    ----------------   ----------------
+  110 NOTE: A2
   131 NOTE: C3     139 NOTE: C#3       : DB3 C#3 ;
   147 NOTE: D3     156 NOTE: D#3       : Eb3 D#3 ;
   165 NOTE: E3
@@ -97,7 +97,8 @@ VARIABLE TEMPO
   988 NOTE: B5
  1047 NOTE: C6
 
-: TUNER ( -- ) GEN3 BEGIN 440 HZ -4 DB ?TERMINAL UNTIL MUTE ;
+: TUNER ( -- ) GEN3 440 HZ  0 DB ;
+: TUNEROFF     GEN3 MUTE ;
 
 : DMAJOR      122 BPM NORMAL
         GEN1  1/8  D3 E3  F#3 G3 A3 B3  C#4 1/2. D4
@@ -110,20 +111,28 @@ VARIABLE TEMPO
         NORMAL 1/4 C5 ;
 
 : TWINKLE
-\     NORMAL
+     NORMAL
      GEN1   1/8  A3 A3 E4 E4 F#4 F#4   1/4 E4
             1/8  D4 D4 C#4 C#4  B3 B3  1/4 A3
-\            STACCATTO
+            STACCATTO
             1/8  E4 E4 D4 D4 C#4 C#4   1/4 B3
-\            NORMAL
+            NORMAL
             1/8  E4 E4 D4 D4 C#4 C#4   1/4 B3
-\            MARCATO
+            MARCATO
             1/8  A3 A3 E4 E4 F#4 F#4   1/4 E4
             1/8  RIT. D4 D4  RIT. C#4  C#4
                  RIT. B3  RIT. B3   RIT. 1/2. A3 ;
 
+: BAGPIPES
+          GEN2 165 HZ -6 DB
+          GEN3 110 HZ -9 DB
+          NOTE MS
+          TWINKLE
+          SILENT ;
+
+
 : VARIATION
-   LEGATO
+   STACCATTO
    GEN1     1/8  A3  C#4  B3  A3  E4  A3  C#4 E4
                  F#4 A4   G#4 F#4 E4  A3  C#4 E4
                  D4  F#4  E4  D4  C#4 E4  D4 C#4
