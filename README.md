@@ -22,6 +22,11 @@ Oct 19, 2017
 Nov 26, 2017
 - Removed ^C? word and replaced with ?TERMINAL. Common word name in old systems. ?TERMINAL also 2X faster because
   it calls a ROM routine to detect the 'FUNCTION 4' key on the TI-99 which is the "BREAK" key in TI BASIC. 
+- Continued to clean and update /LIB, /CCLIB and /DEMO folders to keep the source code compatible with the CAMEL99
+  program in /BIN .  
+  
+  *** Please report bugs in any of the files to theBF on atariage.com or foxaudioresearch at gmail dot com.
+ 
 
 ## Description
 The file called CAMEL99 is a binary program file that should load and run on the TI-99 computer with the EDITOR/ASSEMBLER cartridge plugged into the console. The Forth system that is created is mostly true to the original Camel Forth by Brad Rodriguez but it has a few optimizations to better handle the low speed of the TI-99 computer.  Mostly notably the dictionary search has been re-written in Assembler and is called (FIND). (See: 9900FAST.HSF)
