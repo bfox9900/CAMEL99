@@ -20,8 +20,10 @@ Oct 19, 2017
 - Removed duplicate code from S".  Saves 6 bytes in the binary image
 
 Nov 26, 2017
-- Removed ^C? word and replaced with ?TERMINAL. Common word name in old systems. ?TERMINAL also 7X faster than using KEY?
-  because it calls a ROM routine to detect only the 'FUNCTION 4' key on the TI-99 which is the "BREAK" key in TI BASIC. 
+- fixed bug in new word 'CHARDEF' (GRAFIX2.HSF and GRAFIX2.FTH)  writing too many bytes to VDP.
+- REMOVED ^C? word from kernel and replaced with ?TERMINAL. Common word name in old systems. 
+  ?TERMINAL also 7X faster than using KEY? because it calls a ROM routine to detect only the 
+  'FUNCTION 4' key on the TI-99 which is the "BREAK" key in TI BASIC. 
 - Continued to clean and update /LIB, /CCLIB and /DEMO folders to keep the source code compatible with the CAMEL99
   program in /BIN .  
 - added MUSIC.FTH to /DEMO  
