@@ -1,13 +1,31 @@
-\ TI-FORTH psuedo random number generator evaluation
+\ psuedo random number generator evaluation
 
 \ ***EXPERIMENT***
-\ RNDW replicates the function in TI-FORTH
-\ The HISTOGRAM lets you see how it performs
+\ TI-FORTH RND versus GFORTH method
 
-: RNDW     ( -- n)   83C0 DUP @ 6FE5 * 7AB9 + 5 SRC DUP ROT ! ;
-: RND      ( n -- n) RNDW ABS SWAP MOD ;
-: SEED     ( n -- )  83C0 ! ;
-: RANDOMIZE ( -- )   8802 C@ DROP 0 BEGIN 1+ 8802 C@ 80 AND UNTIL SEED ;
+\ ********************************************
+\ *** UN-COMMENT the one you want to test  ***
+\ ********************************************
+
+\ The HISTOGRAM lets you see how they perform
+COLD
+
+HEX
+83C0 CONSTANT SEED   \ RAM where TI has a number incrementing in main menu
+
+\ TI-METHOD
+\ : RNDW     ( -- n)   SEED DUP @ 6FE5 * 7AB9 + 5 SRC DUP ROT ! ;
+\ : RND      ( n -- n) RNDW ABS SWAP MOD ;
+\ : RANDOMIZE ( -- )   8802 C@ DROP 0 BEGIN 1+ 8802 C@ 80 AND UNTIL SEED ! ;
+\ : NAME$    S" TI Forth method"   ;
+
+
+\ GFORTH METHOD
+ 1045 CONSTANT GEN#   \ GForth uses $10450405, we take the 1st 16 bits
+ : RNDW      ( -- n )   SEED @ GEN# UM* DROP 1+ DUP SEED ! ;
+ : RANDOMIZE ( n -- )   SEED ! ;
+ : RND       ( n -- n') RNDW ABS SWAP MOD ;
+ : NAME$    S" GForth method"  ;
 
 \ ===================================
 \ Test code using TI-99 display
@@ -17,10 +35,11 @@ DECIMAL
  30 CONSTANT 'BLK'                 \ BASIC cursor char.
     VARIABLE CNTR
 
-7C7C 7C7C 7C7C 7C00  PATTERN: SQUARE
-SQUARE 30 CHARDEF
+HEX 7C7C 7C7C 7C7C 7C00 PATTERN: SQUARE
 
-: CELLS   ( n -- cells) 2* ;       \ 16bits = 2 bytes
+DECIMAL
+SQUARE 'BLK' CHARDEF
+
 : ++      ( addr --  ) 1 SWAP +! ; \ incr. a variable
 
 : ERASE   ( adr n -- ) 0 FILL ;    \ erase some memory
@@ -36,7 +55,8 @@ CREATE HIST 32 CELLS ALLOT
          N 0
          DO
            32 RND ]HIST ++         \ rnd is the index
-         LOOP ;
+         LOOP 
+         N CNTR +! ;
 
 : .HISTOGRAM ( -- )                  \ draw the chart
          32 0
@@ -47,14 +67,13 @@ CREATE HIST 32 CELLS ALLOT
 : RUN  ( -- )
        99 SEED
        GRAPHICS
-       12 SCREEN CLEAR
+       8 SCREEN CLEAR
        BEGIN
-          PROMPT SPACE CNTR @ U. ." random no.s" CR
           FILLIT
-          CLEAR \ ." CAMEL99 Histogram:" N . ." no.s"  CR
-          .HISTOGRAM
-          300 CNTR +!
+          PAGE
+          NAME$ 0 SWAP VWRITE
+         .HISTOGRAM
+          PROMPT SPACE CNTR @ U. ." random no.s "
           KEY?
-       UNTIL  ;
+       UNTIL ;
 
- 
