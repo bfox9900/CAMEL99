@@ -111,8 +111,8 @@ TARGET-COMPILING
          1- ?COLOR              \ convert TI-BASIC color to VDP color and test if valid
  ( -- n) 7 VWTR  ;              \ set screen colour in Video register 7
 
-( NOT like TI-BASIC: Changes to familiar CYAN screen)
-: GRAPHICS  ( -- )
+( Looks like TI-BASIC. Changes to familiar CYAN screen)
+: GRAPHICS  ( -- )              \ switch to graphics mode 32x24
              1 VMODE !          \ call this video mode 1
              0 380  0 VFILL     \ erase the entire 40 col. screen space
              20 C/L!            \ 32 chars/line
@@ -120,8 +120,8 @@ TARGET-COMPILING
       ( -- E0) 1 VWTR           \ VDP register 1  bit3 = 0 = Graphics Mode
              1 6 VWTR           \ set sprite descriptor table to 1x$800=$800
              CTAB 10 10 VFILL   \ set ASCII chars to black on transparent [1,0]
-             8 SCREEN
-             CLEAR ;            \ cyan SCREEN
+             8 SCREEN           \ cyan SCREEN
+             CLEAR ;            \ call clear :-)
 
 \ CHAR sub-program is renamed to CHARDEF
 \ this version requires that you create a 16 byte buffer with
@@ -130,8 +130,10 @@ TARGET-COMPILING
 : CHARDEF  ( addr char# --)  ]PDT 8 VWRITE  ;    \ ti basic call char
 : CHARPAT  ( addr char# --)  ]PDT SWAP 8 VREAD ;  \ ti basic call pattern
 
-: PATTERN: ( u u u u  -- )
-           CREATE     2>R  >R    \ Rpush 3 values so we can reverse order
+: PATTERN: ( u u u u  -- )        \ create a named char pattern
+\ usage:  HEX FFFF FFFF FFFF FFFF PATTERN: BLOCK_CURS
+\         DECIMAL BLOCK_CURS 31 CHARDEF  
+           CREATE     2>R  >R     \ Rpush 3 values so we can reverse order
            ,  R> , R> , R> , ;    \ compile 4 ints in VDP useable order
 
 : GCHAR ( col row  -- char)  >VPOS VC@ ;
