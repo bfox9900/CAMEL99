@@ -1,16 +1,10 @@
-\ random number generator adapted from HS/Forth
-\ Jim Kalihan 1990 (R.I.P.)
-
-\ TI-FORTH PRNG
+\ TI-FORTH psuedo random number generator evaluation
 
 \ ***EXPERIMENT***
-\ RNDW is a code word in the CAMEL99 KERNEL.
-\ If you un-comment the definition below it will replace the ASM version
-\ when you compile this program.
-\ Run both ways and observe the speed increase!
+\ RNDW replicates the function in TI-FORTH
+\ The HISTOGRAM lets you see how it performs
 
-\ : RNDW     ( -- n)   83C0 DUP @ 6FE5 * 7AB9 + 5 SRC DUP ROT ! ;
-
+: RNDW     ( -- n)   83C0 DUP @ 6FE5 * 7AB9 + 5 SRC DUP ROT ! ;
 : RND      ( n -- n) RNDW ABS SWAP MOD ;
 : SEED     ( n -- )  83C0 ! ;
 : RANDOMIZE ( -- )   8802 C@ DROP 0 BEGIN 1+ 8802 C@ 80 AND UNTIL SEED ;
@@ -23,7 +17,8 @@ DECIMAL
  30 CONSTANT 'BLK'                 \ BASIC cursor char.
     VARIABLE CNTR
 
-HEX" 7C7C 7C7C 7C7C 7C00"  30 CHARDEF
+7C7C 7C7C 7C7C 7C00  PATTERN: SQUARE
+SQUARE 30 CHARDEF
 
 : CELLS   ( n -- cells) 2* ;       \ 16bits = 2 bytes
 : ++      ( addr --  ) 1 SWAP +! ; \ incr. a variable
@@ -62,4 +57,4 @@ CREATE HIST 32 CELLS ALLOT
           KEY?
        UNTIL  ;
 
- 
+Â 
