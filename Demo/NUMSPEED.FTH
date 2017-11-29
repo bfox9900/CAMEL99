@@ -18,7 +18,7 @@ DECIMAL
        BEGIN
            12 12 AT-XY  DUP U.  \ print copy of the number
            1+                   \ increment the number
-           ^C?                  \ reading ^C is faster (~0.2mS)
+           ?TERMINAL            \ ?TERMINAL is 6X faster than KEY? :-)
        UNTIL
        DROP ;
 
@@ -32,7 +32,7 @@ DECIMAL
        BEGIN
            DUP V.U              \ print copy of the number
            1+                   \ increment the number
-           ^C?                  \ reading ^C is faster (~0.2mS)
+          ?TERMINAL             \ ?TERMINAL is 6X faster than KEY? 
        UNTIL
        DROP ;
 
