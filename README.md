@@ -29,7 +29,9 @@ Nov 26, 2017
 - added MUSIC.FTH to /DEMO  
   
   *** Please report bugs in any of the files to theBF on atariage.com or foxaudioresearch at gmail dot com.
- 
+  
+Dec 5, 2017
+  Added support for INLINE[ ] code in colon definitions. See LIB/INLINE99.FTH
 
 ## Description
 The file called CAMEL99 is a binary program file that should load and run on the TI-99 computer with the EDITOR/ASSEMBLER cartridge plugged into the console. The Forth system that is created is mostly true to the original Camel Forth by Brad Rodriguez but it has a few optimizations to better handle the low speed of the TI-99 computer.  Mostly notably the dictionary search has been re-written in Assembler and is called (FIND). (See: 9900FAST.HSF)
