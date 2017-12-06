@@ -4,7 +4,7 @@ Camel Forth V1.9 for the TI-99
 ## Change History
 Oct 7, 2017  - Version 1.9 includes POSTPONE, ;CODE and DOES>
 - 99.2% ANS CORE compliant. Missing 1 word: ENVIRONMENT?
-- change to CHARDEF in GRAFIX2.FTH         
+  - change to CHARDEF in GRAFIX2.FTH         
 - Now uses pointer to data, not stack data             
 - S" now uses a string POOL at >2000            
 - HEAP memory system added. Starts at >2180             
