@@ -594,7 +594,9 @@ jmptab-size cells BUFFER: BIND
 : RT,      *R11 B, ;              \ return from subroutine call
 : NOP,      2 jmp, ;              \ jump to the next instruction
 
+0 [IF]  
 
+\  *****   MOVED TO TARGET COMPILER FILE *****
 \ ===================================================================
 \ T M S 9 9 0 0   N E X T   R O U T I N E
 
@@ -609,7 +611,7 @@ DEFER NEXT,   \ next, MUST be defined as a FORTH word (macro) in your CODE
 \  ' 9900next, is NEXT,
 
 \ ===================================================================
-
+[THEN]
 
 cr .( Hi Level flow control)
 \ hi level program flow control ........................................
@@ -814,7 +816,7 @@ HEX 86 constant header-size     \ TI-99 E/A5 file header size
 \ ========================================================================
 \ TI EA5 file image header addresses
 
-HEX 2000 EQU MAX-PROG           \ 8K bytes is a big as we can go with each E/A5 files
+HEX 2000 80 + EQU MAX-PROG           \ 8K bytes is a big as we can go with each E/A5 files
 
 \ TI-99 E/A5 file format header is 6 cells.
 \ these are the offsets from the header base
@@ -909,11 +911,6 @@ HEX
             DUP 00FF > ABORT" BYTE too big"
             byte, ;
 
-\ ==================================================================
-\ CR .( *Inline code word compiler)
-\ [CC] CR ." INLINE CODE EXPANSION"
-
-\ INCLUDE CC9900\INLIN99.HSF
 
 
 \ ========================================================================
@@ -990,6 +987,30 @@ HEX
         tforthwords off
         64k org-addr ! ;        \ mark the load address to end of segment ie: not set correctly
 
+
+\ =========================================================================
+\ CROSS-COMPILING  ;C O D E
+0 [if]
+CROSS-COMPILING
+
+\
+\ adapted from Moving Forth by Dr. Brad Rogridguez  Many thanks!
+\
+
+host: t(;CODE)
+                R>                  \ pops the adr of the machine code
+                LATEST @ nfa>cfa    \ gets the CFA of the latest word
+                T!                  \ stores the code address in the TARGET Code Field
+;host
+
+
+host: ;CODE
+                TCOMPILE t(;CODE)       \ compiles t(;CODE) into definition
+                ?CSP COMPILE T[     \ turns off the Forth compiler (just like ";" does)
+                TREVEAL
+                CROSS-ASSEMBLING    \ turns on the CROSS-assembler
+;host IMMEDIATE
+[then]
 
 cr .( TI-99 file control directives)
 \ ===========================================================================*
@@ -1073,6 +1094,12 @@ HEX
 : SET-BOOT.  ( T'-addr -- )   RELOCATE BOOT-ADDRESS T!  ;
 
 \ ===================================================================
+\ E A 3  T A G G E D  O B J E C T   F I L E   
+\ O U T P U T   G E N E R A T O R
+
+include cc9900\compiler\ea3gen.hsf
+
+\ ===================================================================
 \ S A V E  B I N A R Y  F I L E
 
 \ TI-99 EDITOR ASSEMBLER BINARY FORMAT SAVE (Menu option 5 format)
@@ -1089,7 +1116,9 @@ HEX
         [TARGET-IMG SEGMENT] SWAP WRITE-IMG
         IMAGE-SIZE U. ." bytes" CR  ;
 
-HEX
+
+ include CC9900\COMPILER\INLIN99.HSF
+
 
 HOST-COMPILING
 
@@ -1106,7 +1135,6 @@ CR .( Saving XFC99.exe file ...)
 SAVE-EXE XFC99.EXE  CR ." XFC99 TI-99 Forth Cross Compiler for DOS, V1.0 2017"  READ.CMDLINE CR
 CR
 CR
-
 BYE
 
 

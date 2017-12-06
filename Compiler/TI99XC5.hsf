@@ -16,9 +16,12 @@
 \                                                                                 | |
 \                                                                                 |_|
 
-\ History:  Jun 8, 2016     - Ported Intel cross compiler to use ASM9900.HSF
-\           Jan 1, 2017     - Version 5: converted header linkage to work with LFA to NFA not LFA to LFA
-\           Feb 3, 2017     - Added prelim code for headless code in the TARGET
+\ History:  Jun 8, 2016 - Ported Intel cross compiler to use ASM9900.HSF
+\           Jan 1, 2017 - Version 5: converted header linkage to work with LFA to NFA not LFA to LFA
+\           Feb 3, 2017 - Added prelim code for headless code in the TARGET
+\           May 3, 2015 - Changed t['] to cc['] cross-compiling [']
+\                         re-wrote t['] to do a target ' and compile a target literal
+
 
 \ ============================================================================
 \ ==                 F O R T H   H E A D E R   D E S I G N                  ==
@@ -201,21 +204,17 @@ CROSS-COMPILING
 : TDP           ( -- adr)                   \ return the address of the TARGET segment's internal pointer (HsForth specific)
                 [TARGET-IMG seg-ptr] ;      \ we borrow the SEGMENT data structure's internal pointer for the job
 
-: TFILL         ( addr cnt char -- )        \ works like FILL but in the TARGET segment
-                >r  [target] -rot  r> filll ;
-
 : TALLOT        ( n -- )                    \ allocate n bytes in Target memory
-                [TARGET-IMG seg-ptr] +! ;   \ incr. the seg-ptr by n. so simple
+                TDP +! ;                    \ incr. the seg-ptr by n. so simple
 
 : THERE         ( -- taddr)                 \ equiv. to HERE in Forth
                  TDP @ ;                    \ ie: address of next free memory in target dictionary
-
 
 : TALIGN        ( -- )                      \ align tdp to even address
                 THERE ALIGNED TDP ! ;
 
 \ ========================================================================
-\ target space STORE, FETCH and COMMA-COMPILER
+\ target space STORE, FETCH , COMMA-COMPILER and MEMORY operations
 : T!            ( n tadr -- )               \ store a number in the xassembler memory space
                 swap  ( xadr n )
                 >endian
@@ -238,6 +237,9 @@ CROSS-COMPILING
 
 : TC@           ( tadr -- c )
                 [target] swap c@l ;         \ use c@l to get c from a FAR intel Segment
+
+: TFILL         ( addr cnt char -- )        \ works like FILL but in the TARGET segment
+                >r  [target] -rot  r> filll ;
 
 : TCMOVE        ( adr tadr cnt -- )         \ easily move data from host FORTH (lists segment)
                                             \ to target segment, hiding segment names
@@ -324,19 +326,16 @@ VARIABLE XLATEST   0 XLATEST !              \ holds the address of latest WORD c
 \ parameter field      list of addresses to interpret
 
 
-: $HEADER       ( c-addr -- NFA )           \ create a Camel Forth word structure in TARGET memory
+: $HEADER       ( c-addr -- )               \ create a Camel Forth word structure in TARGET memory
                 TAlign                      \ move target dictionary pointer (TDP) to an even cell address
                 xlatest @ link,             \ populate this link field with the NFA of the last defined word.
                 0 immed,                    \ create the immediate byte field. Initialize to zero
                 THERE XLATEST !             \ THERE now points to the NFA. Update XLATEST variable
                 dup upper name,  ;          \ dup c-addr and convert to uppercase and compile into TARGET mem.
 
-: HEADLESS      ( c-addr -- NFA )           \ create a Camel Forth word structure in TARGET memory
+: $NOHEAD      ( c-addr -- )               \ create a Camel Forth word structure in TARGET memory
                 TAlign                      \ move target dictionary pointer (TDP) to an even cell address
-                xlatest @ link,             \ populate this link field with the NFA of the last defined word.
-                0 immed,                    \ create the immediate byte field. Initialize to zero
-                THERE XLATEST !             \ THERE now points to the NFA. Update XLATEST variable
-                DROP  0 T,  ;         \ NAME field is empty
+                DROP  ;                     \ we don't need this string
 
 
 \ ========================================================================
@@ -354,18 +353,18 @@ VARIABLE TFORTHWORDS          \ COUNT of High level Forth words
                             \ but code will be in the TARGET and can be used
 VARIABLE HIDDEN
 
-: THEADER    ( -- )  HIDDEN @  IF HEADLESS   ELSE $HEADER    THEN ;
+: THEADER    ( -- )  HIDDEN @ IF  $NOHEAD else $HEADER  THEN ;
 
 \ compiler directives to control headers in Target
-: .HIDE          HIDDEN ON ;
-: .REVEAL        HIDDEN OFF ;
+:  HEADLESS      HIDDEN ON ;
+:  HEADS         HIDDEN OFF ;
 
 \
 \ **HsForth Carnal Knowledge here**
 \ Cross-compiler "CREATE" primitive creates a word in CURRENT HOST vocabulary AND...
 \ then duplicates the same label in the TARGET system memory image
 : TCREATE:  ( -- )
-                CREATE                      \ create a new word in the Host vocabulary (MIRROR)
+                CREATE                      \ create a new word in the Host MIRROR vocabulary
                 LASTWORD$ THEADER           \ make the header in the TARGET Forth space, with or without names
                 xlatest @  ,                \ compile the TARGET Forth words NFA in the MIRROR version (in the HOST Forth)
                 tforthwords 1+!             \ count this new word for COMPILER reporting
@@ -389,7 +388,6 @@ HEX
 : T.NAME        ( nfa -- )              \ print a TARGET Forth word (from the target segment)
                 Tcount typel ;
 
-
 variable tword-cnt
 
 : TWORDS        ( --)
@@ -410,8 +408,6 @@ variable tword-cnt
                 cr tword-cnt ? 1- ." words in TARGET dictionary"
                 R> BASE ! ;
 
-
-
 \ ========================================================================
 \ C R O S S - A S S E M B L E R   D I R E C T I V E S
 
@@ -427,7 +423,7 @@ DEFER NEW-JMPTABLE     ' ?JMPTAB IS NEW-JMPTABLE  \ this will be resolved when a
                 dup  64k u< not ABORT" ORG address outside TARGET memory"
                 TDP ! ( OKC) ;                      \ OKC is required by HsForth to lock the pointers (magic).
 
-: EQU          CONSTANT ;
+: EQU           CONSTANT ;
 
 : XCNEW.                                          \ ERASE the TARGET mem space
                 Tcodewords off
@@ -539,20 +535,6 @@ HEX
                 TFIND DUP 0= abort" Not in Target Dictionary"
                 nfa>cfa ;
 
-\ ============================================================================
-\ M A G I C   S T U F F:  C R O S S - C O M P I L E R  [ ' ]
-
-\ Cross-compiling ['] looks up TARGET word BUT compiles the address
-\ IN THE HOST COMPUTER AS A LITERAL.
-
-\ When the CROSS-COMPILER word runs, it returns that address and
-\ compiles it in the TARGET memory
-
-: T[']         ( -- <name>)
-                T'                         \ look up the XT (address) of the word in the TARGET memory
-                POSTPONE LITERAL           \ store the address as a literal in the CROSS-COMPILER space
-                POSTPONE T, ; IMMEDIATE    \ at CROSS-COMPILE time put the address in TARGET memory
-
 
 \ ============================================================================
 \ F O R W A R D :    A N D    R E S O L V E S
@@ -592,6 +574,19 @@ FORWARD: 'DODOES
 FORWARD: 'DOUSER
 FORWARD: '(.")
 FORWARD: '(S")
+
+\ ===================================================================
+\ T M S 9 9 0 0   N E X T   R O U T I N E
+
+\ By defining NEXT as a deferred word you can change it easily
+
+DEFER NEXT,   \ next, MUST be defined as a FORTH word (macro) in your CODE
+
+\ EXAMPLE:
+\ : 9900next,
+\        *R10 B, ;  ( assumes address of NEXT is in R10)
+
+\  ' 9900next, is NEXT,
 
 
 \ ============================================================================
@@ -821,7 +816,7 @@ CROSS-COMPILING
 : TLITERAL      ( n -- )  ?XCOMP  'LIT T,  T, ;  IMMEDIATE
 : T2LITERAL     ( d -- )  ?XCOMP 'DLIT T,  SWAP T, T, ;  IMMEDIATE
 
-: T[COMPILE]    ( <name>) ?XCOMP  T'    T,  ; IMMEDIATE
+: T[COMPILE]    ( <name>) ( ?XCOMP)  T'    T,  ; IMMEDIATE
 
 : TCHAR         ( <text> -- ascii)  bl word char+ c@ ;
 : T[CHAR]       ( -- )    ?XCOMP TCHAR [COMPILE] TLITERAL ;  IMMEDIATE
@@ -831,8 +826,32 @@ CROSS-COMPILING
                 Xstate T@                                 \ are we target compiling??
                 if    'LIT  t, ( n ) t,                   \ yes so compile literal and the number into target memory
                 then ;
+\ ============================================================================
+\ M A G I C   S T U F F:  C R O S S - C O M P I L E R  [']
 
-\ ==========================================================================
+\ Cross-compiling ['] looks up TARGET word BUT compiles the address
+\ IN THE HOST COMPUTER AS A LITERAL.
+
+\ When the CROSS-COMPILER word runs, it returns that address and
+\ compiles it in the TARGET memory
+
+: CC[']        ( -- <name>)
+               T'
+               POSTPONE LITERAL
+               POSTPONE T, ;  IMMEDIATE
+
+\ ============================================================================
+\ T A R G E T   C O M P I L I N G  [']
+\ look up the word, compile into TARGET as a literal
+
+: T[']         ( -- <name>)
+               ?XCOMP
+               T'                         \ look up the XT (address) of the TARGET word in the input stream
+               'LIT T,  T,                \ store the address as a literal in the TARGET space
+               ; IMMEDIATE
+
+
+\ =========================================================================
 \ C R O S S - C O M P I L E R  /  I N T E R P R E T E R
 
 : TINTERPRET     ( <word> )
@@ -861,7 +880,7 @@ CROSS-COMPILING
                 REPEAT
                 DROP ;
 
-\ ============================================================================
+\ =========================================================================
 \ B R A N C H   A N D   L O O P   R E S O L V I N G
 
 CROSS-COMPILING
@@ -875,28 +894,6 @@ CROSS-COMPILING
 
 ?stk
 
-\ ===================================================================
-\ CROSS-COMPILING  ; C O D E
-
-CROSS-COMPILING
-
-\
-\ adapted from Moving Forth by Dr. Brad Rogridguez  Many thanks!
-\
-
-host: (t;CODE)
-                R>                  \ pops the adr of the machine code
-                LATEST @ nfa>cfa    \ gets the CFA of the latest word
-                T!                  \ stores the code address in the TARGET Code Field
-;host
-
-
-host: ;CODE
-                'DODOES cfa,       \ compiles (;CODE) into definition
-                ?CSP COMPILE T[     \ turns off the Forth compiler (just like ";" does)
-                TREVEAL
-                CROSS-ASSEMBLING    \ turns on the CROSS-assembler
-;host IMMEDIATE
 
 DECIMAL
 
@@ -914,3 +911,4 @@ CR
 \ now we load the cross-assembler
 
 include CC9900\COMPILER\ASM99005.HSF
+
