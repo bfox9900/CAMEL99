@@ -57,12 +57,15 @@ Type:  DSK1.CAMEL99   ( or KERNEL99  or MULTICAM )
 
 ### ABOUT CAMEL99
 -------------
-The final CAMEL99 Forth has been built for users of TI BASIC who want to explore Forth. With that in mind it has a string package that provides many of the features of BASIC including the use of a string stack and automated stack management. See the source file STRINGS.HSF to see the functions available and the comments at the bottom of the file provide some example code.  
+The final CAMEL99 Forth has been built for users of TI BASIC who want to explore Forth. With that in mind it has a string package that provides many of the features of BASIC including the use of a string stack and automated stack management. See the source file LIB/STRINGS.FTH to see the functions available and the comments at the bottom of the file provide some example code.  
 
 Graphics Support:
-The existing version of CAMEL99 also includes the GRAFIX99.HSF source code which provides common features of TI BASIC that relate the TI-99 display chip, the TMS9918.  Together these two extensions make a Forth system that is more familiar to the TI BASIC programmer.
+The existing version of CAMEL99 also includes the GRAFIX2.HSF source code which provides common features of TI BASIC (VCHAR, HCHAR, GCHAR CLEAR etc.)that relate the TI-99 display chip, the TMS9918.  The graphics and string extensions make a Forth system that is a little more familiar to the TI BASIC programmer however it is still Forth and not BASIC. You are warned.
 
-NOTE: Files with the extension .HSF can only be compiled by the XFC99 cross-compiler. See the LIB folder for examples of CODE that will compile on CAMEL99.
+### File extensions
+Files with the extension .HSF can only be compiled by the XFC99 cross-compiler. 
+Files with the .FTH extension are in the LIB/ folder and they are meant to be compiled on the TI-99.
+(currently they must be pasted into the CLASSIC99 emulator)
 
 ### BUILDING CAMEL99
 ----------------
@@ -87,8 +90,10 @@ There is one "CODE" word (a word written in Forth Assembler) in CAMEL99.HSF. It 
 
 The other files are features you can add the core system to explore the TI-99 or CAMEL99 itself.
 
-*WARNING* The binary code image file cannot be bigger than 8192 bytes at this time.  
-- See ADDONS in CAMEL99.HSF
+*WARNING* The binary code image file cannot be bigger than 8192 bytes at this time.  The compiler will ABORT at the end 
+of the build cycle and report that the memory is image is greater than 8192 bytes.
+
+- See the comment \ ADDONS in CAMEL99.HSF to see how to include CCLIB/ files
 Including TOOLS.HSF and GRAFIX2.HSF fills it up to capacity.
 
 This system is a work in progress by a hobbyist so you will no doubt find numerous errors and places for impovement. That is all good.
@@ -100,7 +105,7 @@ Do not hesitate to let me know at brian dot fox at foxaudioresearch dot ca
 
 The cross compiler source files require some extra commands to control the cross-compiler and so cannot be loaded onto the TI-99 CAMEL99 Forth system.  These files end with the extension '.HSF'  (HsForth) and are kept in the CCLIB folder.
 
-The Library files for CAMEL99 Forth, that comopile on the TI-99 CAMEL99 system, are in the LIB folder and use the extension '.FTH'  
+The Library files for CAMEL99 Forth, that compile on the TI-99 CAMEL99 system, are in the LIB folder and use the extension '.FTH'  
 
 For the most part, with the exception of hardware specfic extensions, the libary code is ANS Standard Forth. CAMEL99 has the CORE word set minus the word ENVIRONMENT?  About 60% of the CORE Extension word set is also part of CAMEL99.
 
