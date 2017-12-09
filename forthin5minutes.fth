@@ -121,6 +121,7 @@ ONE-TO-12                                 \ 0 1 2 3 4 5 6 7 8 9 10 11 12 ok
 
 \ Conditional loops use 'BEGIN' <stuff to do> <condition> 'UNTIL'
 : DECREMENTER ( n -- ) BEGIN 1-  DUP  0= UNTIL ; 
+99 DECREMENTER \ OK
 
 \ WHILE loops use 'BEGIN'  <condition> 'WHILE' <stuff to do> 'REPEAT'
 : UPTO10  ( -- ) 0 BEGIN  1+ 10 < WHILE  ." NOT YET"  REPEAT ; 
