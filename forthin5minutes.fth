@@ -1,3 +1,5 @@
+
+
 ( This is the original Forth comment. Notice the required 1st space!)
 \ This is the full line comment
 
@@ -26,6 +28,9 @@
 .S    \ 5 2 3 56 76 23 65 ok
 
 \ ------------------------------ Basic Arithmetic ------------------------------
+\ set the interpreter to DECIMAL arithimetic with (versus HEX)
+DECIMAL 
+
 \ Arithmetic operators (+,-,*,/ etc) are also just Forth WORDs
 \ They operate on numbers sitting on the stack
 \ '+' takes two inputs, adds them and leaves the answer on the stack
@@ -46,6 +51,12 @@
 52 23 MAX .    \ 52 ok
 52 23 MIN .    \ 23 ok
 
+\ HEXADECIMAL arithmetic and other BASEs
+\ Forth can switch to HEX numbers with the word HEX
+\ AND performs a logical AND so we can mask bits like this
+HEX
+ 1234 00FF AND . \ 34
+
 \ ----------------------------- Stack Manipulation -----------------------------
 \ Naturally, as we work with the stack, we'll need these WORDs:
 \                                                               STACK
@@ -58,8 +69,8 @@
 6 4 5 -ROT .S    \ rotate top item to 3rd position              5 6 4
 
 \ ---------------------- More Advanced Stack Manipulation ----------------------
-1 2 3 4 TUCK   \ duplicate the top item below the second slot:     1 2 4 3 4 ok
-1 2 3 4 OVER   \ duplicate the second item to the top:             1 2 3 4 3 ok
+1 2 3 4 TUCK    \ duplicate the top item below the second slot:     1 2 4 3 4 ok
+1 2 3 4 OVER    \ duplicate the second item to the top:             1 2 3 4 3 ok
 1 2 3 4  2 PICK \ *duplicate* the item at that position to the top: 1 2 3 4 2 ok
 
 \ When referring to stack indexes, they are zero-based. ( ie: 0 PICK = DUP)
