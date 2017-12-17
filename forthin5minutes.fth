@@ -183,25 +183,28 @@ CREATE MYNUMBERS    64 , 9001 , 1337 , \ ok (the last `,` is important!)
 9001 MYNUMBERS 1 CELLS + !    \ ok
 1337 MYNUMBERS 2 CELLS + !    \ ok
 
-\ Reading values at certain array indexes the hard way:
+\ Reading values from our array at indexes, the hard way:
 MYNUMBERS 0 CELLS + ?    \ 64 ok
 MYNUMBERS 1 CELLS + ?    \ 9001 ok
 
-\ We should extend the language by making a helper word for manipulating arrays:
+\ Normally we would extend the language and make a helper word for 
+\ accessing arrays for example we could create '[]'
 ( FORTH lets us use any characters except space as identifier names!)
 
-: [] ( n n -- n ) CELLS + ;    \ ok
-MYNUMBERS 2 [] ?               \ 1337 ok
+: [] ( n array -- addr[n] ) SWAP CELLS + ;    \ ok
+  2 MYNUMBERS [] ?               \ 1337 ok
 
-\ Which we can use for writing too:
-20 MYNUMBERS 1 [] !    \ ok
-   MYNUMBERS 1 [] ?    \ 20 ok
+\ Now we have an array syntax like this.
+20 1 MYNUMBERS [] !    \ ok
+   1 MYNUMBERS [] ?    \ 20 ok
+
+\ *Notice there is no index cheching. You could add it if you need it easily
 
 \ ------------------------------ The Return Stack ------------------------------
 
 \ Just like a sub-routine stack, the Forth return stack holds the address (pointer)
 \ of the word that called the currently running word.  This lets a Forth Word'return'  
-\ to where it came from. 
+\ to the word that called it. (ie: where it came from)
 \ The Return Stack can also be used by the programmer as place to hold numbers 
 \ temporarily. In CAMEL99 the return stack also holds the limit and index numbers
 \ of any running DO LOOP.  
@@ -225,7 +228,7 @@ MYNUMBERS 2 [] ?               \ 1337 ok
 \ Clear the screen:
 \ PAGE
 
-\ Loading Forth files:
+\ Loading Forth files into the system:
 \ INCLUDE MYFILE.FTH
 
 \ With TOOLS.FTH loaded in the system you can list every word that's in Forth's 
