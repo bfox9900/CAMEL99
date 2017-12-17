@@ -11,7 +11,7 @@ Oct 7, 2017  - Version 1.9 includes POSTPONE, ;CODE and DOES>
 - LEAVE has been implemented per CAMEL Forth method               
 - numerous speedups and size reductions in CODE words              
 - new word: ?TERMINAL scans keyboard for FCNT4. 6X faster than KEY?                
-- TMR! TMR@ let you use the 9901 timer for limit timing MAX duration is 325mS            
+- TMR! TMR@ let you use the 9901 timer for timing. MAX duration is 325mS            
 - MS word uses the 9901 timer for accurate delays in milli-seconds 
 
 Oct 19, 2017
