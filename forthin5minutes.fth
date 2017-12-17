@@ -163,8 +163,7 @@ AGE ?      \ 21 ok
 \ Constants work as expected and return their value to the top of stack
 100 CONSTANT WATER-BOILING-POINT    \ ok
 WATER-BOILING-POINT .               \ 100 ok
-
-\ ----------------------------------- Arrays -----------------------------------
+k\ ----------------------------------- Arrays -----------------------------------
 \ Like Assembly language Forth has no standard way to make arrays.
 
 \ We can create arrays by naming a block of memory with the WORD CREATE
@@ -190,7 +189,7 @@ CREATE MYNUMBERS    64 , 9001 , 1337 , \ ok (the last `,` is important!)
 \ ...which is equivalent to:
 
 \ Manually writing values to each index:
-  64 MYNUMBERS 0 CELLS + !      \ ok
+  64 MYNUMBERS 0 CELLS + !    \ ok
 9001 MYNUMBERS 1 CELLS + !    \ ok
 1337 MYNUMBERS 2 CELLS + !    \ ok
 
@@ -203,13 +202,13 @@ MYNUMBERS 1 CELLS + ?    \ 9001 ok
 ( FORTH lets us use any characters except space as identifier names!)
 
 : [] ( n array -- addr[n] ) SWAP CELLS + ;    \ ok
-  2 MYNUMBERS [] ?               \ 1337 ok
+  2 MYNUMBERS [] ?     \ 1337 ok
 
 \ Now we have an array syntax like this.
 20 1 MYNUMBERS [] !    \ ok
    1 MYNUMBERS [] ?    \ 20 ok
 
-\ *Notice there is no index cheching. You could add it if you need it easily
+\ *Notice there is no index checking. You could add it if you need it.
 
 \ ------------------------------ The Return Stack ------------------------------
 
@@ -227,7 +226,7 @@ MYNUMBERS 1 CELLS + ?    \ 9001 ok
 		R> . R> . R> .  ;      \ pop the rest and print
 
 
-\ NOTE: Because Forth uses the return stack internally,  `>R` should
+\ NOTE: Because Forth uses the return stack internally, `>R` should
 \ always be matched by `R>` inside of your word definitions.
 \ Use the return stack carefully!
 
@@ -240,7 +239,7 @@ MYNUMBERS 1 CELLS + ?    \ 9001 ok
 \ PAGE
 
 \ Loading Forth files into the system:
-\ INCLUDE MYFILE.FTH
+\ INCLUDE MYFILE.FTH  (NOT yet implemented in verison 1.9)
 
 \ With TOOLS.FTH loaded in the system you can list every word that's in Forth's 
 \ dictionary.  You can stop the listing by pressing FNCT 4 (CLEAR) on the TI-99.
