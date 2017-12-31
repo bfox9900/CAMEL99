@@ -1155,7 +1155,7 @@ CODE: (FIND) ( Caddr NFA -- XT ? )
 \ end Outer loop
 
 \ convert NFA in R3 to CFA -> R2
-@@6:          R3 R2 MOV,                  \ if found R3 has a name field address (NFA), copy ro R2
+@@6:          R3 R2 MOV,                  \ if found R3 has a name field address (NFA), copy R3->R2
              *R3 R0 MOVB,                 \ get the length of the name to R0
               R0 SWPB,                    \ fix the #$%!@$ byte order again
               R0 R2 ADD,                  \ add length to R2, gets past the string to the CFA
@@ -1180,7 +1180,7 @@ CR ." V D P  C H I P  I N T E R F A C E"
 \ We took a Forth approach to naming VDP memory routines.
 \ So VSBR becomes VC@  and VSBW becomes VC!.
 \ VMBW and VMBR become VWRITE AND VREAD.
-\ We also added a new one V! and V@ then load and store 16 bit numbers to VDP
+\ We also added a new one V! and V@ that load and store 16 bit numbers to VDP
 
 \ And I embraced the Forth paradigm so these routines are created as
 \ Forth words. This gives us the freedom to call these fast routines
@@ -1188,7 +1188,7 @@ CR ." V D P  C H I P  I N T E R F A C E"
 \ With these fast primitives we can write most of the VDP driver
 \ in Forth and still get excellent performance.
 
-\ factored sub-routine. Sets up VDP address
+\ factored sub-routine. Sets up VDP address for write or read mode
 l: WMODE      R0 4000  ORI,             \ set control bits to write mode (01)
 l: RMODE      0 LIMI,
               R0 SWPB,                  \ R0= VDP-adr, set the VDP WRITE address
@@ -1201,7 +1201,7 @@ l: RMODE      0 LIMI,
 \ VSBR Forth style, on the stack
 CODE: VC@     ( VDP-adr -- char )       \ Video CHAR fetch
               TOS R0 MOV,               \ VDP address into R0
-              RMODE @@ BL,              \ set address in read mode
+              RMODE @@ BL,              \ set address to read mode
 @@1:          VDPRD @@ TOS MOVB,        \ READ char from VDP RAM into TOS
               TOS 8 SRL,                \ move the damned byte to correct half of the word
               NEXT,
@@ -1212,9 +1212,9 @@ CODE: V@     ( VDPadr -- n)             \ video fetch 16bit int
               RMODE @@ BL,              \ set address in read mode
               R3 VDPRD LI,              \ put the VDP read port address in R3. 12.9% faster
               TOS CLR,
-             *R3  TOS MOVB,        \ READ char from VDP RAM into TOS
+             *R3  TOS MOVB,             \ READ char from VDP RAM into TOS
               TOS SWPB,
-             *R3  TOS MOVB,        \ READ char from VDP RAM into TOS
+             *R3  TOS MOVB,             \ READ char from VDP RAM into TOS
               TOS SWPB,
               NEXT,
               END-CODE
