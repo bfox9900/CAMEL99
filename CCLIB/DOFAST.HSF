@@ -1,6 +1,6 @@
 \ FASTER DO LOOPS
 \ this do loop is about 14% faster than rstack based do loops
-\ nested benchmarks are only 8% faster (not sure why)
+\ nested benchmarks are only 8% faster
 
 CR .( Register based DO LOOPs)
 CR .( **NOT MULT-TASKING COMPATIBLE**)
