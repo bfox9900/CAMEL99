@@ -15,7 +15,7 @@ DECIMAL
   9848 , 9877 , 9903 , 9926 , 9945 , 9962 , 9976 , 9986 , 9994 , 9998 ,
   10000 ,
 
-: ]SIN  ( ndx -- n) 2* SINTAB + @ ; \ calc index into table & fetch value
+: ]SIN  ( ndx -- n) CELLS SINTAB + @ ; \ calc index into table & fetch value
 
 \ save space by defining these constants
  90 CONSTANT 90^
