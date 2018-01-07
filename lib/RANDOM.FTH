@@ -9,7 +9,7 @@
 
 HEX
 83C0 CONSTANT SEED   \ RAM where TI has a number incrementing in main menu
-1045 CONSTANT GEN#   \ GForth uses $10450405, we take the 1st 16 bits
+1045 CONSTANT GEN#   \ GForth uses $10450405, we take the upper 16 bits
 
 : RNDW      ( -- n )   SEED @ GEN# UM* DROP 1+ DUP SEED ! ;
 : RANDOMIZE ( n -- )   SEED ! ;
