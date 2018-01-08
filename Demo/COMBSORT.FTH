@@ -44,7 +44,7 @@ CREATE Q   SIZE CELLS CELL+ ALLOT
 
 
 : /1.3 ( N -- N )   10 13 */  1 MAX  ;
-: CHAR+!  ( n addr -- ) 1 SWAP +! ;
+: 1+!  ( n addr -- ) 1 SWAP +! ;
 
 : XCHG  ( ADR ADR -- )  OVER @  OVER @  SWAP ROT !  SWAP ! ;
 : XCHG2  ( ADR ADR -- )  2DUP @  SWAP @  ROT !   SWAP ! ; \ should be faster but no difference
@@ -64,7 +64,7 @@ CREATE Q   SIZE CELLS CELL+ ALLOT
               SFLAG OFF
            THEN
         LOOP
-        PASSES CHAR+!
+        PASSES 1+!
        SFLAG @  GAP @ 1 = AND             \ additional conditional
    UNTIL ;
 
