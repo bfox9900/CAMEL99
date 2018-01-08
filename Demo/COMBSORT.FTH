@@ -4,7 +4,12 @@
 \ Approximately 10X faster than BUBBLE Sort except when list is 
 \ already sorted.
 
-\ INCLUDE RANDOM.FTH
+HEX
+83C0 CONSTANT SEED   \ RAM where TI has a number incrementing in main menu
+1045 CONSTANT GEN#   \ GForth uses $10450405, we take the 1st 16 bits
+: RNDW      ( -- n )   SEED @ GEN# UM* DROP 1+ DUP SEED ! ;
+: RANDOMIZE ( n -- )   SEED ! ;
+: RND       ( n -- n') RNDW ABS SWAP MOD ;
 
 VARIABLE GAP
 VARIABLE ITEMS
@@ -13,16 +18,13 @@ VARIABLE SFLAG
 VARIABLE PASSES
 
 DECIMAL
-100 CONSTANT SIZE
-
-\   0 CONSTANT 0
-\   1 CONSTANT 1
+255 CONSTANT SIZE
 
 CREATE Q   SIZE CELLS CELL+ ALLOT
 
 : ]Q  ( n -- adr) CELLS Q + ;   \ this is faster than using DOES>
 
-: RND() ( -- N) 200 RND ;
+\ : RND() ( -- N) 200 RND ;
 
 : ERASE   0 FILL ;
 : CLEARIT   0 ]Q SIZE CELLS ERASE ;  \ all the same data
@@ -32,22 +34,22 @@ CREATE Q   SIZE CELLS CELL+ ALLOT
 \ LOAD THE ARRAY WITH DIFFERENT KINDS OF MIXED UP DATA
 : FILLIT    SIZE  0 DO   I  I ]Q !      LOOP ;
 
-: RANDIT    SIZE  0 DO   RND() I ]Q !   LOOP ;
+: RANDIT    SIZE  0 DO  256 RND I ]Q !   LOOP ;
 
 : TWOIT     CLEARIT   99 45 ]Q !  777 SIZE 2/ ]Q ! ;  \ only 2 different records
 
-: TURTLES   SIZE  0 
+: TURTLES   SIZE  0
             DO                  \ each 2 elements are reversed
                I I CHAR+ ]Q !
                I CHAR+ I ]Q !
             2 +LOOP ;
 
+\ this macro makes the sort faster
+: /1.3 ( N -- N ) S" 10 13 */  1 MAX " EVALUATE ;  IMMEDIATE
 
-: /1.3 ( N -- N )   10 13 */  1 MAX  ;
 : 1+!  ( n addr -- ) 1 SWAP +! ;
 
 : XCHG  ( ADR ADR -- )  OVER @  OVER @  SWAP ROT !  SWAP ! ;
-: XCHG2  ( ADR ADR -- )  2DUP @  SWAP @  ROT !   SWAP ! ; \ should be faster but no difference
 
 : DESC-COMBSORT ( N -- )
     CR ." COMB SORT! "
