@@ -9,15 +9,21 @@
 \ --------------------------------- Preamble -----------------------------------
 ( ** CAMEL99 Forth is case sensitive. ALL CAMEL99 commands are UPPERCASE **)
 
-\ All Forth commands are separated by a space
+\ ************************************************
+\ *  All Forth commands are separated by a SPACE *
+\ ************************************************
+
 \ Forth commands are called WORDS. They are like sub-routines in other languages.
 \ WORDs are kept in the Forth Dictionary.
 
 \ In Forth, everything is either a WORD in the dictionary or a number.
 
-\ All programming in Forth is done by using existing WORDs to make new words.
+\ All programming in Forth is done by using existing WORDs to make new WORDs.
 
-\ Numbers and math are performed on the parameter stack 
+\ FORTH is one of the first "CONCATENTIVE" languages which means you can 
+\ string words together end to end to make more powerful words.
+
+\ Numbers and math are typicallu performed on the parameter stack 
 ( commonly called "the stack")
 
 \ Typing numbers pushes them onto the stack. 1st number is on the bottom.
@@ -28,7 +34,7 @@
 .S    \ 5 2 3 56 76 23 65 ok
 
 \ ------------------------------ Basic Arithmetic ------------------------------
-\ set the interpreter to DECIMAL arithimetic with (versus HEX)
+\ set the interpreter to DECIMAL arithimetic with (versus HEX or any other base)
 DECIMAL 
 
 \ Arithmetic operators (+,-,*,/ etc) are also just Forth WORDs
@@ -51,11 +57,15 @@ DECIMAL
 52 23 MAX .    \ 52 ok
 52 23 MIN .    \ 23 ok
 
+
 \ HEXADECIMAL arithmetic and other BASEs
 \ Forth can switch to HEX numbers with the word HEX
 \ AND performs a logical AND so we can mask bits like this
 HEX
  1234 00FF AND . \ 34
+ 
+ DECIMAL  ( changes the system back to DECIMAL arithmetic)
+ 
 
 \ ----------------------------- Stack Manipulation -----------------------------
 \ Naturally, as we work with the stack, we'll need these WORDs:
@@ -83,6 +93,19 @@ HEX
 \ WORDs that we create are just added to the dictionary
 \ WORDs can be combined with other words to any depth
 : 2(X^2) ( n -- n) SQUARED  2 * ; \ returns  2(n^2)
+
+\ Printing text is a little weird but workable.
+\ ANS Forth has ." to print a text string inside a compiled word.
+\ If you want to print text in the interpreter use .(  
+\ Remember to put space between ." or .( and the text!
+
+\ CR (carriage return) is the word for a new line
+
+CR .( This message will print from the interpreter)
+
+: HELLO  
+         CR ." Hello World!"  
+	 CR ." is how we print inside the compiler" ;
 
 \ -------------------------------- Conditionals --------------------------------
 \ TRUE and FALSE are constants in CAMEL99. TRUE returns -1  FALSE returns 0
@@ -114,35 +137,41 @@ MYLOOP
 
 \ `DO` expects two numbers on the stack: the end number and the start number.
 
-\ We can get the value of the index as we loop with `i`:
+\ We can get the value of the index as we loop with `I`:
 : ONE-TO-12 ( -- ) 12 0 DO I . LOOP ;     \ ok
-ONE-TO-12                                 \ 0 1 2 3 4 5 6 7 8 9 10 11 12 ok
+ONE-TO-12   \ 0 1 2 3 4 5 6 7 8 9 10 11 12 ok
 
 \ `?DO` works similarly, except it will skip the LOOP if the end and start
-\ numbers are equal.
+\ numbers are equal. ( We defined SQUARE earlier so we can use it now)
 : SQUARES ( n -- ) 0 ?DO I SQUARE . LOOP ;   \ ok
-10 SQUARES                                   \ 0 1 4 9 16 25 36 49 64 81 ok
+10 SQUARES   \ 0 1 4 9 16 25 36 49 64 81 ok
 
 \ Change the "step" with `+LOOP`:
-: THREES ( n n -- ) ?do i . 3 +LOOP ;    \ ok
-15 0 THREES                             \ 0 3 6 9 12 ok
+: THREES ( n n -- ) 3 ?DO  I .   3 +LOOP ;  \ ok
+20 THREES  \ 3 6 9 12 15 18 ok
 
 \ Indefinite loops with `BEGIN` <stuff to do>  `AGAIN`:
-: DEATH ( -- ) BEGIN ." Are we there yet?" AGAIN ;    
+: FOREVER ( -- ) BEGIN ." Are we there yet?" AGAIN ;  ( YOU CAN'T STOP THIS)  
 
 \ Conditional loops use 'BEGIN' <stuff to do> <condition> 'UNTIL'
 : DECREMENTER ( n -- ) BEGIN 1-  DUP  0= UNTIL ; 
 99 DECREMENTER \ OK
 
+\ Breaking out of a loop from the keyboard is possible by testing for a 
+\ key with KEY? which reads any key -or- ?TERMINAL which reads FNCT 4 on TI-99
+( also called BREAK in TI-BASIC)
+: KEYLOOP   BEGIN  ." Press a key to stop me..."  KEY? UNTIL ; 
+: BREAKLOOP  BEGIN ." Press FNCT 4 to stop me..." ?TERMINAL UNTIL ;
+
 \ WHILE loops use 'BEGIN'  <condition> 'WHILE' <stuff to do> 'REPEAT'
-: UPTO10  ( -- ) 0 BEGIN  1+ 10 < WHILE  ." NOT YET"  REPEAT ; 
+: UPTO10  ( -- )  0 BEGIN  1+  DUP 10 < WHILE  ." NOT YET!  "  REPEAT DROP ; 
 
 \ ---------------------------- Variables and Memory ----------------------------
 
 \ Use `VARIABLE` to declare `AGE` to be a variable.
 VARIABLE AGE    \ ok
 
-\ VARIABLEs simply give us the address in memory where we can store numbers
+\ VARIABLEs simply give us a named address in memory where we can store numbers
 ( like a pointer but easier to understand)
 
 \ We write 21 to AGE with the word `!` (pronounced "store")
@@ -155,15 +184,24 @@ AGE @     \ 21 is sitting on the top of the stack now
 \ to print the value on the top of the stack use the '.' command
 AGE @ .    \ 21 ok
 
-\ A common tool to fetch and print is '?' which is easy to make with ':'
-: ?   ( addr -- )  @ . ;
+\ A common tool to fetch and print is '?' which is easy to make.
+: ?   ( addr -- )  @  . ;
 
 AGE ?      \ 21 ok
 
+\ We can work in a new RADIX by changing the system variable BASE
+\ Binary...
+ HEX F0  2 BASE ! .  \ 11110000 ok
+
+\ Octal...
+8 BASE !   7 1 + .   \ 10 ok
+
+DECIMAL
+ 
 \ Constants work as expected and return their value to the top of stack
 100 CONSTANT WATER-BOILING-POINT    \ ok
 WATER-BOILING-POINT .               \ 100 ok
-k\ ----------------------------------- Arrays -----------------------------------
+\ ----------------------------------- Arrays -----------------------------------
 \ Like Assembly language Forth has no standard way to make arrays.
 
 \ We can create arrays by naming a block of memory with the WORD CREATE
@@ -173,14 +211,14 @@ k\ ----------------------------------- Arrays ----------------------------------
 \ CELLS calculates memory size for n CELLS
 
 \ All together it looks like this:
-CREATE MYNUMBERS   3 CELLS ALLOT    \ ok
+CREATE MYNUMBERS   10 CELLS ALLOT    \ ok
 
 \ Initialize all the values to 0
 MYNUMBERS 3 CELLS 0 FILL   \ ok
 
 \ Alternatively we could define ERASE
 : ERASE  ( addr len -- ) 0 FILL ;
-MYNUMBERS 3 CELLS ERASE
+MYNUMBERS 10 CELLS ERASE
 
 \ or we can CREATE an array initialized with specific values
 \ using the 'comma' number compiler. (puts 1 integer in next available memory)
@@ -199,7 +237,7 @@ MYNUMBERS 1 CELLS + ?    \ 9001 ok
 
 \ Normally we would extend the language and make a helper word for 
 \ accessing arrays for example we could create '[]'
-( FORTH lets us use any characters except space as identifier names!)
+( FORTH lets us use any characters except space as identifiers)
 
 : [] ( n array -- addr[n] ) SWAP CELLS + ;    \ ok
   2 MYNUMBERS [] ?     \ 1337 ok
@@ -215,20 +253,19 @@ MYNUMBERS 1 CELLS + ?    \ 9001 ok
 \ Just like a sub-routine stack, the Forth return stack holds the address (pointer)
 \ of the word that called the currently running word.  This lets a Forth Word'return'  
 \ to the word that called it. (ie: where it came from)
-\ The Return Stack can also be used by the programmer as place to hold numbers 
-\ temporarily. In CAMEL99 the return stack also holds the limit and index numbers
-\ of any running DO LOOP.  
+\ In CAMEL99 the return stack also holds the limit and index of any running DO LOOP. 
 
-\ Example: Print 4 numbers in reverse order
+\ The programmer is free to use the return stack BUT be very careful.
+\ You can easily crash the system if you make a mistake.
+
+\ Return stack Example: Print 4 numbers in reverse order
 : .REVERSE ( n1 n2 n3 n4 -- )  
 		>R >R >R               \ push 3 #s onto return stack
 		.                      \ print n1, 
 		R> . R> . R> .  ;      \ pop the rest and print
 
-
 \ NOTE: Because Forth uses the return stack internally, `>R` should
-\ always be matched by `R>` inside of your word definitions.
-\ Use the return stack carefully!
+\ always be matched by `R>` inside of your word definitions or expect a crash!
 
 \ --------------------------------- Final Notes --------------------------------
 
@@ -241,11 +278,13 @@ MYNUMBERS 1 CELLS + ?    \ 9001 ok
 \ Loading Forth files into the system:
 \ INCLUDE MYFILE.FTH  (NOT yet implemented in verison 1.9)
 
-\ With TOOLS.FTH loaded in the system you can list every word that's in Forth's 
+\ TOOLS.FTH is loaded in the system so you can list every word that's in Forth's 
 \ dictionary.  You can stop the listing by pressing FNCT 4 (CLEAR) on the TI-99.
 \ WORDS
 
-\ Exiting CAMEL99 Forth:
+\ SEE the /LIB folder for extensions to the CAMEL99 Forth like STRINGS, BUFFERs, SPRITES and more.
+
+\ Exiting CAMEL99 Forth type
 \ BYE
 
 
