@@ -1,4 +1,5 @@
 
+
 # CAMEL99
 Camel Forth V1.9 for the TI-99
 ------------------------------
@@ -47,7 +48,7 @@ Jan 26, 2018
                  MARKER.FTH   ANS Forth MARKER word.
                  UDOTR.FTH    print un-signed right justified numbers
                  VALUES.FTH   create ANS Forth VALUE type
-                 
+                 TINYHEAP.FTH fixes to a simple ALLOCATE,FREE,RESIZE implementation
 ## Description
 The file called CAMEL99 is a binary program file that should load and run on the TI-99 computer with the EDITOR/ASSEMBLER cartridge plugged into the console. The Forth system that is created is mostly true to the original Camel Forth by Brad Rodriguez but it has a few optimizations to better handle the low speed of the TI-99 computer.  Mostly notably the dictionary search has been re-written in Assembler and is called (FIND). (See: 9900FAST.HSF)
 
