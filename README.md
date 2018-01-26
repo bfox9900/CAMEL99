@@ -119,7 +119,7 @@ Including TOOLS.HSF and GRAFIX2.HSF fills it up to capacity.
 
 This system is a work in progress by a hobbyist so you will no doubt find numerous errors and places for impovement. That is all good.
 
-Do not hesitate to let me know at brian dot fox at foxaudioresearch dot ca
+Do not hesitate to let me know at {brian dot fox at brianfox dot ca}
 
 ### TWO DIFFERENT TYPES OF LIBRARY FILES
 ------------------------------------
