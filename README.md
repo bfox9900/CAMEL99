@@ -4,10 +4,16 @@ Camel Forth V1.9 for the TI-99
 
 ### ABOUT CAMEL99
 -------------
-CAMEL99 Forth has been built for as an educational tool for those who are interested in how you could cross-compile Forth to a different CPU. CAMEL99 begins with a TMS9900 Cross-Assembler written in Forth. With the assembler we define the primitive operations in the file 9900FAST.HSF. The Cross-compiler, also written in Forth, gives us the tools to create the Forth dictionary in the TARGET memory image that lets us give each primitive a "header" (name) in the dicationary.  The file CAMEL99.HSF uses the primitives to create the high level Forth words that let us build the TARGET COMPILER. As each piece is added to the TARGET system less of the Cross-compiler is used. It's truly an excerise in boot-strapping.
+CAMEL99 Forth has been built as an educational tool for those who are interested in how you could cross-compile Forth to a different CPU using an existing Forth system. Rather than starting from scratch it uses CAMEL Forth by Dr. Brad Rodriguez for the hi-level Forth code. This has been "tweeked" and dare I say improved a little to better fit the very slow TI-99 computer. (More things written in Assembler was the answer)
 
-Users of TI BASIC who want to explore Forth might also find this system useful. With that in mind it has a string package that provides many of the features of BASIC including the use of a string stack and automated stack management. See the source file LIB/STRINGS.FTH to see the functions available and the comments at the bottom of the file provide some example code.  
+CAMEL99 begins with a TMS9900 Cross-Assembler written in Forth. With the assembler we define the primitive operations in the file 9900FAST.HSF. The Cross-compiler, also written in Forth, gives us the tools to create the Forth dictionary in the TARGET memory image that lets us give each primitive a "header" (name) in the dicationary.  The file CAMEL99.HSF uses the primitives to create the high level Forth words that let us build the TARGET COMPILER. As each piece is added to the TARGET system less of the Cross-compiler is used. It's truly an excerise in boot-strapping.
 
+The source for the Assembler and cross-compiler are provide here. It's not pretty but the comments document my learning experience for those new to the process.
+
+Users of TI BASIC who want to explore Forth might also find this system useful. With that in mind it has a string package that provides many of the features of BASIC including the use of a string stack and automated stack management. See the source file LIB/STRINGS.FTH to see the functions available and the comments at the bottom of the file provide some example code. 
+
+### For the Forth Tech
+CAMEL99 is an indirect threaded Forth with the top of stack cached in Register 4 of the CPU. This has shown to give similar performance to the TI-99 system Turbo Forth, which is the benchmark system for speed on TI-99 but CAMEL99 uses less assembler code in the overall system. In comparison to legacy implementations like Fig-Forth CAMEL99 is about 20% faster in high-level Forth operations.
 
 ## Change History
 Oct 7, 2017  - Version 1.9 includes POSTPONE, ;CODE and DOES>
