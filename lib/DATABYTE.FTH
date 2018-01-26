@@ -1,26 +1,27 @@
 \ DATA and BYTE directive with comma delimiting
-\ More compatible with ASM DATA statements
+\ More compatible with TI ASM DATA statements
 
 \ Usage:
 \ HEX
 \ DATA DEAD,BEEF,AABB,
 \ DATA 0001,2200,3300,4440,
+\ BYTE 00,01,02,03,FF
 
-: HEAP  ( -- addr) H @ ;
-: ?DATA ( -- ) 0= ABORT" Bad#" ;
 
+HEX
 : BYTE ( -- )
          BEGIN
-            [CHAR] , WORD COUNT HEAP PLACE
-            HEAP C@
+           [CHAR] , PARSE-NAME  DUP
          WHILE
-            HEAP ?NUMBER ?DATA C,
-         REPEAT ;
+            EVALUATE  DUP FF00 AND  ABORT" Not a byte"
+            C,
+         REPEAT 
+         2DROP ;
 
 : DATA ( -- )
          BEGIN
-            [CHAR] , WORD COUNT HEAP PLACES
-            HEAP C@
+            [CHAR] , PARSE-NAME  DUP
          WHILE
-            HEAP ?NUMBER ?DATA ,
-         REPEAT ;
+            EVALUATE ,
+         REPEAT 
+         2DROP ;
