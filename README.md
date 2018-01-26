@@ -1,3 +1,4 @@
+
 # CAMEL99
 Camel Forth V1.9 for the TI-99
 ------------------------------
@@ -31,7 +32,22 @@ Nov 26, 2017
   
 Dec 5, 2017
   Added support for INLINE[ ] code in colon definitions. See LIB/INLINE99.FTH
-
+Jan 26, 2018
+  To /DEMO added: PONG.FTH  simple PONG game
+                  QUICKSORT.FTH recursive quicksort demo
+                  DUTCHFLAG7.FTH on screen combsort demo with multiple inputs
+                  
+  To /LIB added: 80COL.FTH   for F18A hardware or emulators that support it
+                 ASM9900.FTH TMS9900 RPN assembler that loads above the dictionary
+                 ATTYPE.FTH  10X faster type to screen location with error checking
+                 BOOLEAN.FTH to create BIT arrays. Slower but space efficient.
+                 DATABYTE.FTH changed to be more like TI-Assembler syntax
+                 DEFER99.FTH  Forth 2012 deferred words and support words
+                 FASTCASE.FTH creates VECTOR tables easily. (Like "ON GOSUB" for BASIC programmers)
+                 MARKER.FTH   ANS Forth MARKER word.
+                 UDOTR.FTH    print un-signed right justified numbers
+                 VALUES.FTH   create ANS Forth VALUE type
+                 
 ## Description
 The file called CAMEL99 is a binary program file that should load and run on the TI-99 computer with the EDITOR/ASSEMBLER cartridge plugged into the console. The Forth system that is created is mostly true to the original Camel Forth by Brad Rodriguez but it has a few optimizations to better handle the low speed of the TI-99 computer.  Mostly notably the dictionary search has been re-written in Assembler and is called (FIND). (See: 9900FAST.HSF)
 
