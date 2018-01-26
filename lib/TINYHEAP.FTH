@@ -1,83 +1,86 @@
 ( CAMEL99 TINY HEAP    Apr 4 2017 BJF )
-( simple code for ALLOCATE FREE RESIZE)
-( Operates similiar to Forth dictionary)
+( simple code for ANS Forth ALLOCATE FREE RESIZE)
 
-( Apr 5 2017  complete re-think )
+( Apr 5 2017   complete re-think             )
+( Jan 26, 2018 fixed FREE, better factoring  )
 
-( *SET* these CONSTANTs to your heap memory)
 HEX
-2000 CONSTANT HEAP   ( using 4k space in Low MEM)
-3000 CONSTANT HEND
+3000 CONSTANT HEND  \ end of HEAP
 
-VARIABLE AP       ( allocation pointer)
-VARIABLE LSTNODE  ( retains last allocated node address)
+: CELL-  ( n -- n)  2- ;
 
-: HHERE       ( - ADR) HEAP AP @ + ;   ( next free HEAP address)
-: HALLOT      ( N - )  AP +! ;
-: H,          ( N - )  HHERE ! 2 HALLOT ;
+VARIABLE HLAST ( retains last allocated node address)
 
-: NLINK       ( node -- addr) 2-  ;
-: NSIZE       ( node -- addr) 4 - ;
+: HEAP        ( - adr) H @ ;   ( next free HEAP address)
+: HALLOT      ( n - )  H +! ;
+: H,          ( n - )  HEAP ! 2 HALLOT ;
+
+: NLINK       ( node -- addr) CELL-  ;
+: NSIZE       ( node -- addr) [ 2 CELLS ] LITERAL - ;
 
 : INIT-HEAP   ( - )
-              HEAP 1000 FF FILL ( for debugging)
-              0 AP !
+              2100 H !
+\              HEAP 1000 FF FILL ( for debugging)
               0 H,
               HEAP H,
-              HHERE LSTNODE ! ;
+              HEAP HLAST ! ;
 
-: HFITS?      ( n - ) HHERE + HEND < ;
+: HFITS?      ( n - ) HEAP + HEND < ;
 
-: (ALLOC)     ( n -- addr ?)
-              DUP H,
-              LSTNODE @ H,
-              HHERE DUP LSTNODE !
-              SWAP HALLOT
-              -1 ;
+: NODE,       ( n -- addr)  \ create new node, return addr
+              H, HLAST @ H,  HEAP ;
+
+: (ALLOC)     ( n -- addr ?) \ un-conditional allocate primitive
+              DUP NODE,      \ create node of n bytes
+              DUP HLAST !    \ store node as last node
+              SWAP HALLOT    \ allocate n bytes
+              TRUE ;         \ return true always
 
 : ALLOCATE ( N -- addr ?)
-            DUP HFITS?
+            DUP HFITS?       \ test for size
             IF   (ALLOC)
-            ELSE  HHERE 0
+            ELSE  HEAP FALSE
             THEN ;
 
-: ?NODE    ( node -- ) LSTNODE @ <> ABORT" Not last node" ;
+: ?NODE    ( node -- ) HLAST @ <> ABORT" Not last node" ;
 
 : FREE     ( node -- ?)  ( NON-standard. Only frees last node)
             ?NODE
-            LSTNODE @ NSIZE @ 4 + NEGATE HALLOT  -1 ;
+            HLAST @ NSIZE @ CELL+ NEGATE HALLOT
+            HEAP CELL- HLAST !
+            -1 ;
 
 : RESIZE   ( n node -- ?)
             DUP ?NODE
             OVER HFITS?
-            IF  2DUP NSIZE @ - HALLOT  ( allot the difference from old * new size)
-                NSIZE !                ( update node size field)
-                -1
-
-            ELSE  0
+            IF   2DUP NSIZE @ - HALLOT  ( allot the difference from old * new size)
+                 NSIZE !                ( update node size field)
+                 TRUE
+            ELSE FALSE
             THEN ;
 
-INIT-HEAP
+: HFREE   ( -- n ) HEND HEAP - ;
 
-( Test code)
-: MALLOC ( n -- addr) ALLOCATE 0= ABORT" Malloc failed!"  ;
+\ ==== Test code ====
+DECIMAL
+INIT-HEAP  
 
-  2 MALLOC CONSTANT X  ( integers)
+: .HEAP   ( -- ) CR  ." Free heap= "  HFREE U. ."  bytes" ;
+ 
+ .HEAP
+: MALLOC ( n -- addr) ALLOCATE 0= ABORT" Malloc fail!"  ;
+
+  2 MALLOC CONSTANT X  ( integers)  ( better to use VALUES )
   2 MALLOC CONSTANT Y
   2 MALLOC CONSTANT Z
  50 MALLOC CONSTANT A$ ( strings)
+.HEAP
 
-99 X !
-66 Y !
-77 Z !
-
-X ?
-X NSIZE ?
-A$ NSIZE ?
+99 X !   66 Y !  77 Z !
+X ?   X NSIZE ?   A$ NSIZE ?
 
 : PRINT ( string -- ) COUNT  CR TYPE ;
 
 S" Now is the time for all good men to come to the aid of their country." A$ PLACE
-
-PAGE A$ PRINT
+CR  A$ PRINT
 
