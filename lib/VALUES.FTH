@@ -1,4 +1,7 @@
-( VALUEs for CAMEL99 )
+\ VALUEs for CAMEL99 
+\ see: DEFER99.FTH  DEFER! and (TO) are the same code
+\      so you could replace one for the other and save space
+
 
 ( usage:  0 VALUE W  )
 (        99 TO W )
