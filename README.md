@@ -47,7 +47,8 @@ Dec 5, 2017
   Added support for INLINE[ ] code in colon definitions. See LIB/INLINE99.FTH
 
 Jan 26, 2018
-  To /DEMO added: PONG.FTH  simple PONG game
+  To /DEMO added: 
+- PONG.FTH  simple PONG game using SPRITES and sound with NO ISR control
 - QUICKSORT.FTH recursive quicksort demo
 - DUTCHFLAG7.FTH on screen combsort demo with multiple inputs
                   
