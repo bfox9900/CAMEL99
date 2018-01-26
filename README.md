@@ -1,6 +1,14 @@
 # CAMEL99
 Camel Forth V1.9 for the TI-99
 ------------------------------
+
+### ABOUT CAMEL99
+-------------
+CAMEL99 Forth has been built for as an educational tool for those who are interested in how you could cross-compile Forth to a different CPU. CAMEL99 begins with a TMS9900 Cross-Assembler written in Forth. With the assembler we define the primitive operations in the file 9900FAST.HSF. The Cross-compiler, also written in Forth, gives us the tools to create the Forth dictionary in the TARGET memory image that lets us give each primitive a "header" (name) in the dicationary.  The file CAMEL99.HSF uses the primitives to create the high level Forth words that let us build the TARGET COMPILER. As each piece is added to the TARGET system less of the Cross-compiler is used. It's truly an excerise in boot-strapping.
+
+Users of TI BASIC who want to explore Forth might also find this system useful. With that in mind it has a string package that provides many of the features of BASIC including the use of a string stack and automated stack management. See the source file LIB/STRINGS.FTH to see the functions available and the comments at the bottom of the file provide some example code.  
+
+
 ## Change History
 Oct 7, 2017  - Version 1.9 includes POSTPONE, ;CODE and DOES>
 - 99.2% ANS CORE compliant. Missing 1 word: ENVIRONMENT?
@@ -71,9 +79,6 @@ Insert the EDITOR/ASSEMBLER cartridge
 Select "Option 5":  "RUN PROGRAM FILE"
 Type:  DSK1.CAMEL99   ( or KERNEL99  or MULTICAM )
 
-### ABOUT CAMEL99
--------------
-The final CAMEL99 Forth has been built for users of TI BASIC who want to explore Forth. With that in mind it has a string package that provides many of the features of BASIC including the use of a string stack and automated stack management. See the source file LIB/STRINGS.FTH to see the functions available and the comments at the bottom of the file provide some example code.  
 
 Graphics Support:
 The existing version of CAMEL99 also includes the GRAFIX2.HSF source code which provides common features of TI BASIC (VCHAR, HCHAR, GCHAR CLEAR etc.)that relate the TI-99 display chip, the TMS9918.  The graphics and string extensions make a Forth system that is a little more familiar to the TI BASIC programmer however it is still Forth and not BASIC. You are warned.
