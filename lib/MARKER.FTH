@@ -2,7 +2,7 @@
 
 \ Use:  MARKER RESTORE
 \ < ... make new words ... >
-\ FENCE  removes all new words including the word RESTORE
+\ RESTORE  removes all new words including the word RESTORE
 
 : MARKER  ( -- )
    LATEST @ HERE         \ get latest word NFA and location of HERE
