@@ -71,26 +71,3 @@ HEX
   2038  equ SAVPAB    \ Pointer to the device or subprogram name in
   203A  equ SAVVER    \ Version number of the DSR.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
