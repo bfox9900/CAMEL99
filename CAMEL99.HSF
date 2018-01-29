@@ -439,7 +439,7 @@ TARGET-COMPILING
 \ HEX 400 MALLOC CONSTANT MYBUFFER
 
 : MALLOC     ( n -- addr ) H @  SWAP H +! ;   \ allocate heap and return pointer
-: FREE       ( n -- ) NEGATE H +! ;           \ free heap memory
+: MFREE       ( n -- ) NEGATE H +! ;           \ free heap memory
 
 [cc] cr .( Stack primitives ...)  [tc]
 \ ========================================================================
@@ -688,7 +688,7 @@ TARGET-COMPILING
 
 
 
--1 [IF]
+0 [IF]
 \ this the fast scroll with a HUGE buffer dynamically allocated & freed
 : SCROLL      ( -- ) \ ** 68 bytes
               PAUSE
@@ -697,26 +697,26 @@ TARGET-COMPILING
               R@  C/L@ +                       \ calc. the address of 2nd line in the buffer
               VTOP @  C/SCR @ C/L@ - VWRITE    \ write buffer from 2nd line to top of screen
               R> DROP                          \ remove buffer addr. from rstack
-              C/SCR @ FREE                     \ release the memory
+              C/SCR @ MFREE                    \ release the memory
               0 17 AT-XY  VPOS C/L@ BL VFILL ; \ place cursor on last line & clear line
 
 [ELSE]
 
-\ this is a line by line scroll uses only 1 line of bytes for buffer size.
+\ this is a smaller line by line scroll uses only 1 line of bytes for buffer size.
 \ *the buffer is dynamically allocated and de-allocated
 \ It is about 12% slower than the huge buffer version because of DO/LOOP overhead
 : SCROLL      ( -- )
-              C/L@ MALLOC ( -- addr)          \ allocate heap for 1 line
+              C/L@ MALLOC ( -- heap)          \ allocate heap for 1 line
               L/SCR 1                         \ loops from 1 to 24
               DO
                  PAUSE
-                 I  C/L@ * OVER     ( -- vdp heap)
+                 I  C/L@ * OVER     ( -- VDPaddr heap)
                  2DUP          C/L@  VREAD    \ read line to heap
                  SWAP C/L@ -   C/L@  VWRITE   \ write HEAP to line above
               LOOP
               0 17 AT-XY  VPOS C/L@ BL VFILL  \ place cursr & clear last line
               DROP                            \ drop heap pointer
-              C/L@ FREE ;                     \ de-allocate heap memory
+              C/L@ MFREE ;                    \ de-allocate heap memory
 
 [THEN]
 
@@ -1093,20 +1093,20 @@ CODE: INIT    WRKSP0 LWPI,
 [CC] HEX
 \ =======================================================================
 \ B O O T   U P   C O D E
-\ cold inits H (HEAP) to >2100.
 TARGET-COMPILING
 : WARM        SP0 SP!           \ WARM does not destroy dictionary or heap
               HEX
               TMR!
               3 KUNIT# C!
-              PAGE BEEP T." CAMEL99 MultiForth V1.99    B Fox 2017"
+              PAGE BEEP T." CAMEL99 MultiForth V1.99    B Fox 2018"
               CR QUIT ;
 
 : COLD        80 83C2 C!       \ COLD resets the system
               ORGDP @ DP !
               ORGLAST @ LATEST !
-              2100 H !
-              TEXT
+              2100 H !         \ inits H (HEAP) to >2100
+              TEXT             
+
               WARM ;
 
 
