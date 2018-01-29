@@ -25,6 +25,7 @@ Oct 7, 2017  - Version 1.9 includes POSTPONE, ;CODE and DOES>
 - LEAVE has been implemented per CAMEL Forth method               
 - numerous speedups and size reductions in CODE words              
 - new word: ?TERMINAL scans keyboard for FCNT4. 6X faster than KEY?                
+
 - TMR! TMR@ let you use the 9901 timer for timing. MAX duration is 325mS            
 - MS word uses the 9901 timer for accurate delays in milli-seconds 
 
@@ -63,7 +64,15 @@ Jan 26, 2018
  - UDOTR.FTH    print un-signed right justified numbers
  - VALUES.FTH   create ANS Forth VALUE type
  - TINYHEAP.FTH fixes to a simple ALLOCATE,FREE,RESIZE implementation
-
+ 
+ Jan 29, 2018
+  - Added non-standard MALLOC and FREE to provide minimal HEAP management
+  - re-wrote SCROLL to use MALLOC and FREE.  
+  - Wrote a new SCROLL that uses a 1 line buffer (C/L@ MALLOC) BECAUSE: 80 column mode used a 1920 byte buffer!
+    - new SCROLL is smaller 6 bytes and takes only 1 line of heap memory but 12% slower.
+    - also new scroll is more multi-tasking friendly
+    - old faster scroll is still selectable with conditional compile control.
+----------------------------------------------------------------------------
 ## Description
 The file called CAMEL99 is a binary program file that should load and run on the TI-99 computer with the EDITOR/ASSEMBLER cartridge plugged into the console. The Forth system that is created is mostly true to the original Camel Forth by Brad Rodriguez but it has a few optimizations to better handle the low speed of the TI-99 computer.  Mostly notably the dictionary search has been re-written in Assembler and is called (FIND). (See: 9900FAST.HSF)
 
