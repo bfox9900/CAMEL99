@@ -21,6 +21,7 @@
 \           Feb 3, 2017 - Added prelim code for headless code in the TARGET
 \           May 3, 2015 - Changed t['] to cc['] cross-compiling [']
 \                         re-wrote t['] to do a target ' and compile a target literal
+\           Jan 29,2017 - Changed T." to be more like ANS Forths. Compiles (S") and TYPE
 
 
 \ ============================================================================
@@ -572,8 +573,9 @@ FORWARD: 'DLIT
 FORWARD: 'DOCON
 FORWARD: 'DODOES
 FORWARD: 'DOUSER
-FORWARD: '(.")
+\ FORWARD: '(.")   \ removed Jan 29,2018
 FORWARD: '(S")
+FORWARD: 'TYPE
 
 \ ===================================================================
 \ T M S 9 9 0 0   N E X T   R O U T I N E
@@ -745,8 +747,10 @@ CROSS-COMPILING
 : TS,    ( adr len -- ) THERE OVER 1+  TALLOT TPLACE TALIGN ;  \ compile a stack string into target memory
 : T,"         ( <text>" -- ) [char] " PARSE TS, ;              \ parse input string into TARGET memory
 : TS"         '(S") cfa, T," ; IMMEDIATE                       \ compile a string literal into TARGET
-: T."         '(.") cfa, T," ; IMMEDIATE                       \ cross-compiling DOT-QUOTE
 
+\ : T."         '(.") cfa, T," ; IMMEDIATE                     \ cross-compiling DOT-QUOTE. Gone: Jan29/18
+
+ : T."         '(S") cfa, T,"  'TYPE cfa,  ;  IMMEDIATE        \ changed to ANS style with TYPE
 \ ========================================================================
 \ C R O S S   C O M P I L E R   F I N D
 
@@ -837,8 +841,8 @@ CROSS-COMPILING
 
 : CC[']        ( -- <name>)
                T'
-               POSTPONE LITERAL
-               POSTPONE T, ;  IMMEDIATE
+               POSTPONE LITERAL             \ compile the XT as literal in the HOST memory
+               POSTPONE T, ;  IMMEDIATE     \ later, compile the XT in the TARGET memory
 
 \ ============================================================================
 \ T A R G E T   C O M P I L I N G  [']
