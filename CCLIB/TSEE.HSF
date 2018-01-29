@@ -55,10 +55,6 @@ HEX
                 NIP ;                           \ drop the input NFA and keep the result
 
 \ Camel99 Executor words let us determine what kind of FORTH word we are decompiling
-
-: tcolon?       ( CFA -- ?)  'DOCOL = ;      \ is this a colon definition?
-: S"?           ( CFA -- ?)  '(S") = ;       \ is this a string literal?
-: ."?           ( CFA -- ?)  '(.") = ;       \ is this a printed string?
 : 'exit?        ( CFA -- ?)  'exit = ;       \ read contents of addr to see if the addr of EXIT is in it
 
 \ decompiler output for each word type
@@ -75,7 +71,7 @@ VARIABLE IMMFLAG      \ set if decompiled word is immediate
 : .S"WORD        ( NFA CFA -- )  DUP CELL+   [CHAR] S EMIT [CHAR] " EMIT SPACE ;   \ print 'S"'
 : .CONSTANT      ( NFA CFA -- )  CR  DUP CELL+ T@ U. ." CONSTANT " .FINDBUF ABORT ;
 : .USER          ( NFA CFA -- )  CR  DUP CELL+ T@ U. ." USER " .FINDBUF ABORT ;
-: .EXIT          ( cfa -- )       ."  ; "  IMMFLAG @ IF ."  IMMEDIATE" THEN  CR abort ;
+: .EXIT          ( cfa -- )       ."  ; "  IMMFLAG @ IF ."  IMMEDIATE" THEN  CR  ;
 
 : .DOTQUOTE      ( NFA CFA -- )
                  [CHAR] . EMIT [CHAR] " EMIT SPACE   \ print '."'
@@ -107,8 +103,6 @@ HEX 045A constant Tnext       \ machine code for CAMEL99 NEXT (B *R10)
                  'DOCON  OF  .CONSTANT     ENDOF
                  'DOUSER OF  .USER         ENDOF
 \                 '(S")   OF  .S"WORD       ENDOF
-\                  '(.")   OF  .DOTQUOTE     ENDOF
-
                  .CODEWORD     \ default: it's a code word
               ENDCASE ;
 
@@ -122,14 +116,14 @@ HEX 045A constant Tnext       \ machine code for CAMEL99 NEXT (B *R10)
                       cell+                     \ move to next cell in the thread
                       DUP T@                    \ -- cell XT
                       dup 'exit?
-                      if  .exit  then
+                      if  .exit  exit then
                       cfa>nfa                   \ -- cell nfa
                       dup validword?            \ -- cell nfa ?
                       if
                           T.NAME SPACE ?NEWLINE
                       else
                           DROP                 \ not a word so drop the nfa
-                          DUP T@ 4 .R space    \ fetch the contents and print it as a UN-signed number
+                          DUP T@ 4 .R SPACE    \ fetch the contents and print it as a UN-signed number
                       then
                 AGAIN ;
 
