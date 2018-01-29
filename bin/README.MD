@@ -1,4 +1,4 @@
-#README
+README
 
 ##CAMEL99 BINARY FILES
 
@@ -11,9 +11,10 @@ I have made a change in philospy with 1.99.  It does not contain the GRAFIX2.HSF
 the binary program.  Instead I have included MTASK99.HSF the cooperative multi-tasker.
 
 V1.99 also a new SCROLL word that manages the heap in LOW mem properly and instead of taking
-and entire screen of memory, it only allocates one line.  This was changed because 80cols
+an entire screen of memory from the HEAP, it only allocates one line.  This was changed because 80cols
 mode took 1920 bytes in the heap everytime it scrolled. The old SCROLL is still in the code
-and you can recompile the program by changing the 0 to a -1 at the [IF] just before it.
+and you can recompile the program by changing the 0 to a -1 at the [IF] just before it. The new SCROLL
+is about 12% slower but is better behaved.
 
 And of course nothing prevents you from building your own program with GRAPHICS mode pre-
 compiled in the binary.
