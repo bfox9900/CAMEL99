@@ -162,7 +162,6 @@ CODE: YIELD  ( -- )  \ *** moved to primitives file ****
               END-CODE
 [THEN]
 
-
 \ convert labels into Forth constants for the addresses of the code
 [CC] HEX
       NEXT2  [TC] constant: NEXT2      \ convert EQU to Forth constant
@@ -176,8 +175,8 @@ TARGET-COMPILING
 : WAKE     ( PID -- ) TRUE  SWAP TFLAG LOCAL ! ;  \ wake up PID
 
 \ turn multi-tasking on or off by changing the CODE address in PAUSE
-: SINGLE   ( -- )  NEXT2      T['] PAUSE ! ;       \ disable multi-tasking
-: MULTI    ( -- ) T['] YIELD >BODY T['] PAUSE ! ;  \ enable multi-tasking
+: SINGLE   ( -- ) NEXT2             T['] PAUSE ! ;  \ disable multi-tasking
+: MULTI    ( -- ) T['] YIELD >BODY  T['] PAUSE ! ;  \ enable multi-tasking
 
 ( *** YOU  M U S T  use INIT-MULTI before multi-tasking ***)
 : INIT-MULTI ( -- )
@@ -208,9 +207,9 @@ TARGET-COMPILING
        R> SLEEP  ;                          \ mark this new task as asleep
 
 : ASSIGN ( xt pid -- )
-           DUP  JOB LOCAL      ( -- xt PID addr )  \ get the address of JOB for task PID
-           OVER 'IP LOCAL !    \ store addr of JOB in the PID's instruction pointer
-  ( -- xt pid)  JOB LOCAL ! ;  \ store the XT in the PID's JOB user var.
+       DUP  JOB LOCAL        ( -- xt PID addr )  \ get the address of JOB for task PID
+       OVER 'IP LOCAL !      \ store addr of JOB in the PID's instruction pointer
+( -- xt pid)  JOB LOCAL ! ;  \ store the XT in the PID's JOB user var.
 
 \ : RESTART  ( PID -- )  DUP DUP JOB LOCAL SWAP 'IP LOCAL !  WAKE ;
 
