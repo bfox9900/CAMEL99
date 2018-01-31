@@ -72,4 +72,7 @@ HEX
                8 +LOOP                                            \ increment the offset address by 8
                CR 
                R> BASE ! ;
-               
+
+: .FREE      CR
+             3000 H @  - CR ." Lower mem: " U.
+             FF00 HERE - CR ." Upper mem: " U.  ;
