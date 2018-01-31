@@ -72,6 +72,13 @@ Jan 26, 2018
     - new SCROLL is smaller 6 bytes and takes only 1 line of heap memory but 12% slower.
     - also new scroll is more multi-tasking friendly
     - old faster scroll is still selectable with conditional compile control.
+Jan 31 2018
+   - change TICKTOCK.HSF file to use the "JIFF" as the basic time unit
+     This is 16.66 MS so while it is counting the cooperative tasker
+     has plenty of time to service a round-robin task Queue.
+   - Used the new timer and improved Multi-tasker to build a background
+     sound list player (/lib/bgsound.fth)
+
 ----------------------------------------------------------------------------
 ## Description
 The file called CAMEL99 is a binary program file that should load and run on the TI-99 computer with the EDITOR/ASSEMBLER cartridge plugged into the console. The Forth system that is created is mostly true to the original Camel Forth by Brad Rodriguez but it has a few optimizations to better handle the low speed of the TI-99 computer.  Mostly notably the dictionary search has been re-written in Assembler and is called (FIND). (See: 9900FAST.HSF)
