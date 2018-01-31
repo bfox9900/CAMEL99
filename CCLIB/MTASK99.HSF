@@ -1,16 +1,19 @@
 \ TASKS99.HSF for CAMEL99                               06JAN2017 Brian Fox
 
 \ May 15 2017  RE-wrote for use with new Kernel that includes USER variables
+\ Jan 31 2018 -big cleanup. Simplified stack location code. USIZE now 152 bytes
+\             -RESTART command now POPs local Rstack. It was overflowing
+\             -with repeated RESTARTs.
 
 [UNDEFINED] XASSEMBLER [IF] ."  **This is for XFC99.EXE cross compiler"
                             cr ." Compile halted."  ABORT [THEN]
-                            
+
 REGISTERS [IF]
 CR
 CR ." *ERROR*"
 cr ." You have register DO/LOOPS enabled"
 cr ." MTASK99 uses R13,14 and R15"
-CR ." SET REGISTERS value to FALSE and recompile"
+CR ." SET REGISTERS value to FALSE in 9900FAST.HSF and recompile"
 cr ." *** COMPILE HALTED ***"
 CR CR ABORT
 [THEN]
@@ -67,15 +70,9 @@ CR CR ABORT
 \  17 USER JOB      contains XT of Forth word that runs in this task
 \  19 USER VAR3
 \  21 USER VAR4
-\  22 USER VAR5
-\  23 USER VAR6
-\  24 USER VAR7
-\  25 USER VAR8
-\  26 USER VAR9
-\  27 USER VAR10
-\  28 USER VAR11
-\  29 USER VAR12
-\  30 USER VAR13
+\     ....
+\  40 USER VAR20   \ last user variable is 20
+
 \ -----------------------------------------------------------------------
 \   TASK Parameter stack base address 20 cells (grows downwards)
 \   TASK Return stack base address    20 cells (grows downwards)
@@ -94,15 +91,15 @@ CR CR ABORT
 [THEN]
 
 [TC]
-8300 CONSTANT: USER0       \ user0 is the main Forth task workspace
+8300 CONSTANT: USER0       \ USER0 is the main Forth task workspace
 
-\ calc. size of task memory block (168 bytes)
+\ calc. size of task memory block (152 bytes)
 [CC] DECIMAL
-     15 cells              \ register space
-     28 cells +            \ 28 user variables space
+
+     16 cells              \ register space
+     32 cells +            \ 20 USER VARIABLE spaces + EXTRA
      20 cells +            \ parameter stack
      20 cells +            \ return stack
-     CELL+                 \ 1 cell extra for safety
 [TC] CONSTANT: USIZE       \ "user area" size
 
 TARGET-COMPILING
@@ -111,10 +108,10 @@ TARGET-COMPILING
   14 USER: 'RP             \ the task's Forth RP register ( R7)
   18 USER: 'IP             \ the task's Forth IP register ( R8)
 
-\ these registers are 13,14 &15, used by RTWP to change context
-  26 USER: TLINK           \ R13 = linked task wksp
-  28 USER: TPC             \ R14 = linked task program counter
-  30 USER: TST             \ R15 = linked task status register
+\ rename registers 13,14&15, used by RTWP to change context
+  26 USER: TLINK           \ R13 = next task's wksp
+  28 USER: TPC             \ R14 = next task's program counter
+  30 USER: TST             \ R15 = next task's status register
 
 
 \ T A S K   S W I T C H E R
@@ -188,17 +185,20 @@ TARGET-COMPILING
 \ - copy the root Forth USER area into a new workspace.
 \ - SET both stack addresses to the proper registers in the user area,
 \ - insert PID into the round-robin list
-\ - your program needs allot 168 bytes somewhere. (USIZE)
-\ - the address of your memory will become the PID.
+\ - your program needs allot USIZE (176) bytes somewhere.
+\ - the address of your memory block will become the PID.
+
+\          *** THESE ARE VERY SMALL TASK BLOCKS ***
+\ 20 stack items is the theoretical minimum for a Forth process
 : FORK ( PID -- )
        DUP >R                               \ copy PID to RSTACK
-      ( PID) USIZE 0 FILL                   \ erase user area
-       USER0 R@ 60 CMOVE                    \ copy USER0 regs & vars to taskaddr
-                                            \ -sets R14 to TSTAT routine(IF init-multi was run)
-                                            \ -sets R10 to NEXT2
+      ( PID) USIZE 0 FILL                   \ erase new task block
+       USER0 R@ 60 CMOVE                    \ copy USER0 data to new task block
 
-       R@ 100 +  R@ 'SP LOCAL !             \ set Rstack pointer to this user area
-       R@ 140 +  R@ 'RP LOCAL !             \ set Pstack pointer to this user area
+       R@ USIZE +  ( addr )                 \ calc. end of task block for Rstack
+       DUP R@ 'RP LOCAL !                   \ dup & store in local RP register
+       ( addr) 20 CELLS -                   \ calc. Pstack addr
+       R@ 'SP LOCAL !                       \ store in local SP register
 
 \ insert this task into round-robin list of tasks
        TLINK @                 ( -- link)   \ get the current round-robin link
@@ -206,12 +206,19 @@ TARGET-COMPILING
        R@ TLINK LOCAL !                     \ store the copy from above into new task's space
        R> SLEEP  ;                          \ mark this new task as asleep
 
+
 : ASSIGN ( xt pid -- )
        DUP  JOB LOCAL        ( -- xt PID addr )  \ get the address of JOB for task PID
        OVER 'IP LOCAL !      \ store addr of JOB in the PID's instruction pointer
 ( -- xt pid)  JOB LOCAL ! ;  \ store the XT in the PID's JOB user var.
 
-\ : RESTART  ( PID -- )  DUP DUP JOB LOCAL SWAP 'IP LOCAL !  WAKE ;
+0 [IF]
+ : RESTART ( pid -- )                   \ handy to restart a sleeping task
+           DUP DUP DUP
+           JOB LOCAL  SWAP 'IP LOCAL !  \ JOB->local IP register
+           2 SWAP 'RP LOCAL +!          \ pop the local Rstack ( not sure why)
+           WAKE ;                       \ pid wake
+[THEN]
 
 TARGET-COMPILING
 
