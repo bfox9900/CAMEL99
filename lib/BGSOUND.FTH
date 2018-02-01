@@ -13,10 +13,6 @@
 \ ========================================================
 \ sound list player
 HEX
-: >MS    ( n -- n')  4 LSHIFT ;  \ n*16, converts ISR delay value to milliseconds
-
-: NEXTSND  ( snd$ -- snd$' ) COUNT + 1+ ; \ next_string = startaddr+length+1
-
 : SILENT ( --)  9F SND!  BF SND!  DF SND! FF SND! ;  \ turn off all sounds
 
 : PLAY$ ( sound_string -- ) \ play 1 sound string
@@ -27,17 +23,16 @@ HEX
        R> JIFFS ;           \ use the delay from Rstack (JIFF=1/60)
 
 : PLAYLIST   ( addr -- )    \ play a TI sound list
-         BEGIN  DUP C@
-         WHILE              \ while the length is not 0
-            PAUSE
+         BEGIN DUP C@ WHILE \ while the length is not 0
+            PAUSE           \ give somebody else some time
             DUP PLAY$       \ play a single string
-            NEXTSND         \ advance to the next sound string
+            COUNT + 1+      \ advance to the next sound string
          REPEAT
          SILENT
          DROP ;             \ mom said always clean up after yourself
 \ ========================================================
 HEX
-\ create a 16 cell fifo to feed the sound player
+\ create a fifo to feed the sound player
 VARIABLE SHEAD
 VARIABLE STAIL
 
@@ -69,9 +64,9 @@ USIZE MALLOC CONSTANT TASK1
 
  : RESTART ( pid -- )
            DUP DUP DUP
-           JOB LOCAL  SWAP 'IP LOCAL !  \ JOB->local IP register
-           2 SWAP 'RP LOCAL +!          \ pop the local Rstack, removes last job
-           WAKE ;                       \ pid wake
+           JOB LOCAL    SWAP 'IP LOCAL !  \ JOB->local IP register
+           DUP USIZE +  SWAP 'RP LOCAL !  \ reset local Rstack
+           WAKE ;                         \ pid wake
 
 \ ===============================================
 \ end user commands
@@ -93,20 +88,40 @@ USIZE MALLOC CONSTANT TASK1
 : /END   0 C,  ALIGN  ;   \ compile zero, force even memory boundary
 
 HEX
-\ CREATE MUNCHMAN
-\       BYTE 08,85,2A,90,A6,08,B0,CC,1F,12
-\       BYTE 08,85,2A,90,A4,1C,B0,C9,0A,12
-\ /END
-\
-\ CREATE PACMAN
-\       BYTE 06,86,0D,97,AC,1A,B7,08
-\       BYTE 02,8F,08,02
-\       BYTE 02,AB,23,05
-\       BYTE 02,86,0D,04
-\       BYTE 01,BF,03
-\       BYTE 02,8E,0B,08
-\       BYTE 02,8A,0A,02
-\       BYTE 03,AC,1A,B7,08
-\ /END
+ CREATE MUNCHMAN
+       BYTE 08,85,2A,90,A6,08,B0,CC,1F,12
+       BYTE 08,85,2A,90,A4,1C,B0,C9,0A,12
+ /END
 
+ CREATE PACMAN
+       BYTE 06,86,0D,97,AC,1A,B7,08
+       BYTE 02,8F,08,02
+       BYTE 02,AB,23,05
+       BYTE 02,86,0D,04
+       BYTE 01,BF,03
+       BYTE 02,8E,0B,08
+       BYTE 02,8A,0A,02
+       BYTE 03,AC,1A,B7,08
+ /END
+ 
+CREATE NOKIA
+       BYTE 01,9F,20,
+       BYTE 03,90,85,05,09,
+       BYTE 02,8F,05,09,
+       BYTE 02,87,09,12,
+       BYTE 02,87,08,12,
+       BYTE 02,85,06,09,
+       BYTE 02,81,07,09,
+       BYTE 02,8E,0B,12
+       BYTE 02,8A,0A,12,
+       BYTE 02,81,07,09,
+       BYTE 02,8F,07,09,
+       BYTE 02,8A,0C,12,
+       BYTE 02,8A,0A,12,
+       BYTE 02,8F,07,24,
+       BYTE 01,9F,00,
+/END
+
+
+: QALL   MUNCHMAN >Q  PACMAN >Q MUNCHMAN >Q PACMAN >Q NOKIA >Q ;
 
