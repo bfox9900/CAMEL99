@@ -21,6 +21,7 @@ XFC99 gives you the ability to write inline Assembly language inside of a colon 
 some internals of how CAMEL99 goes together but the system also provides you with some MACROS to make the job a little easier.  
 See Chapter XX:  The Assembler.
 An example always helps to explain things:
+
 : DUP@.  ( adr – adr n)  ASM[ TOS PUSH,  *TOS TOS MOV,  ]ASM  . ;
 
 The example above is a COLON definition but it uses ASM[    ]ASM to jump into machine code inside the definition. 
@@ -38,6 +39,7 @@ CODE: @      ( a -- w )   *TOS TOS MOV,    NEXT, END-CODE
 
 Notice they are the same code. Also notice that at the end of each CODE: definition there is the MACRO “NEXT,” .  
 This is the Forth “inner interpreter” and although it is pretty fast at only 3 instructions it still takes 19 micro-seconds to run.  The code for @ only takes 6 uS so it is spending 75% of its time running NEXT.  So for a time critical routine our DUP@ word would be 2X faster.
+
 ### Stealing Code
 Another way to do the same thing is to create a new CODE:  word and “steal” the machine code from the Forth system.  We can do this with the word  CODE[  .   CODE[ finds the machine code for any ASM word in the Forth system and copies it in a new location.  If we needed our DUP@ word in many places it would be better to give it a name and code it like this :
 
