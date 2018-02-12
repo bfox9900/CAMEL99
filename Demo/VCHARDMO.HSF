@@ -7,21 +7,22 @@ DECIMAL
 : RND(Y)   ( -- y) 31 RND 1+ ;       ( when it is so easy to call it )
 : RND(C)   ( -- c) 15 RND 1+ ;
 
-HEX" FFFF 0000 FFFF 0000" 131 CHARDEF \ 20 CALL CHAR(159,F0F00F0FF0F00F0F"
+F0F0 0F0F F0F0 0F0F PATTERN: LINES    \ compile pattern data in memory with a name
+ LINES 159 CHARDEF                    \ 20 CALL CHAR(159,F0F00F0FF0F00F0F"
 
-: STUFF                              \ 25 REM STUFF  name of routine)
+: STUFF                               \ 25 REM STUFF  name of routine)
 GRAPHICS 0
-BEGIN CLEAR                          \ 30 CALL CLEAR) ( BEGIN is like line# 30, to jump back to)
+BEGIN CLEAR                           \ 30 CALL CLEAR ( BEGIN is like line# 30, to jump back to)
 0 0 AT-XY 1+ DUP  U.
 \      RND(C) SCREEN                  \ 40 CALL SCREEN(INT(RND*16)+1) )
 
-      16 RND(C) RND(C) COLOR         \ 50 CALL COLOR(16,INT(RND*16)+1,INT(RND*16)+1) )
-      RND(Y) 0 ?DO                   \ 60 FOR I=1 TO INT(RND*32)+1 )
-      RND(Y) RND(X) 131 RND(X) VCHAR \ 70 CALL VCHAR(INT(RND*24)+1,INT(RND*32)+1,159,INT(RND*24)+1))
-      LOOP                           \ 80 NEXT I )
-\      20000 0 DO                     \ 90 FOR X=1 TO 200 ) ( yes loops are about 100x faster)
+      16 RND(C) RND(C) COLOR          \ 50 CALL COLOR(16,INT(RND*16)+1,INT(RND*16)+1) )
+      RND(Y) 0 ?DO                    \ 60 FOR I=1 TO INT(RND*32)+1 )
+      RND(Y) RND(X) 159 RND(X) VCHAR  \ 70 CALL VCHAR(INT(RND*24)+1,INT(RND*32)+1,159,INT(RND*24)+1))
+      LOOP                            \ 80 NEXT I )
+\      20000 0 DO                     \ 90 FOR X=1 TO 200 ) ( EMPTY loops are about 100x faster)
 \      LOOP                           \ 100 NEXT X )
-      ^C? ABORT" *Break"            \ 105 REM FORTH loops don't have BREAK built-in)
-AGAIN ;                              \ 110 GOTO 30  )  ( actually GOTO BEGIN )
+      ?TERMINAL ABORT" *Break"        \ 105 REM FORTH loops don't have BREAK built-in)
+AGAIN ;                               \ 110 GOTO 30  )  ( actually GOTO BEGIN )
 
 
