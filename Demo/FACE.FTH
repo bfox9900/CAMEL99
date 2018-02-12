@@ -106,8 +106,8 @@ HEX
            7 GVMOVE                     \ write 7 bytes GROM->VDP
         LOOP ;
 
-\ a way to add BREAK to Forth
-: *BREAK*   ^C? IF  CR ." BREAK"  CHARSET  8 SCREEN  ABORT  THEN ;
+\ a way to add BREAK to Forth. ?TERMINAL tests for FNCT 4 key press.
+: *BREAK*   ?TERMINAL IF  CR ." BREAK"  CHARSET  8 SCREEN  ABORT  THEN ;
 
 \   == FORTH VERSION      == BASIC VERSION ===
 DECIMAL
