@@ -23,7 +23,7 @@
 \ FORTH is one of the first "CONCATENTIVE" languages which means you can 
 \ string words together end to end to make more powerful words.
 
-\ Numbers and math are typicallu performed on the parameter stack 
+\ Numbers and math are typically performed on the parameter stack 
 ( commonly called "the stack")
 
 \ Typing numbers pushes them onto the stack. 1st number is on the bottom.
@@ -34,7 +34,7 @@
 .S    \ 5 2 3 56 76 23 65 ok
 
 \ ------------------------------ Basic Arithmetic ------------------------------
-\ set the interpreter to DECIMAL arithimetic with (versus HEX or any other base)
+\ set the interpreter to DECIMAL arithimetic with: 
 DECIMAL 
 
 \ Arithmetic operators (+,-,*,/ etc) are also just Forth WORDs
@@ -60,6 +60,7 @@ DECIMAL
 
 \ HEXADECIMAL arithmetic and other BASEs
 \ Forth can switch to HEX numbers with the word HEX
+
 \ AND performs a logical AND so we can mask bits like this
 HEX
  1234 00FF AND . \ 34
@@ -102,6 +103,8 @@ HEX
 \ CR (carriage return) is the word for a new line
 
 CR .( This message will print from the interpreter)
+CR .( This is also called a "talking comment")
+CR .( It is used to inform the programmer while file is compiling)
 
 : HELLO  
          CR ." Hello World!"  
@@ -146,7 +149,7 @@ ONE-TO-12   \ 0 1 2 3 4 5 6 7 8 9 10 11 12 ok
 : SQUARES ( n -- ) 0 ?DO I SQUARE . LOOP ;   \ ok
 10 SQUARES   \ 0 1 4 9 16 25 36 49 64 81 ok
 
-\ Change the "step" with `+LOOP`:
+\ Change the looping "step" with `+LOOP`:
 : THREES ( n n -- ) 3 ?DO  I .   3 +LOOP ;  \ ok
 20 THREES  \ 3 6 9 12 15 18 ok
 
@@ -168,7 +171,7 @@ ONE-TO-12   \ 0 1 2 3 4 5 6 7 8 9 10 11 12 ok
 
 \ ---------------------------- Variables and Memory ----------------------------
 
-\ Use `VARIABLE` to declare `AGE` to be a variable.
+\ Use `VARIABLE` to create an integer variable.
 VARIABLE AGE    \ ok
 
 \ VARIABLEs simply give us a named address in memory where we can store numbers
@@ -182,7 +185,7 @@ VARIABLE AGE    \ ok
 AGE @     \ 21 is sitting on the top of the stack now
 
 \ to print the value on the top of the stack use the '.' command
-AGE @ .    \ 21 ok
+( AGE @ ) .    \ 21 ok
 
 \ A common tool to fetch and print is '?' which is easy to make.
 : ?   ( addr -- )  @  . ;
@@ -208,16 +211,21 @@ WATER-BOILING-POINT .               \ 100 ok
 \ and allocating memory space with ALLOT.
 
 \ A CELL in Forth is the memory for a single integer
-\ CELLS calculates memory size for n CELLS
+\ For TI-99, a CELL is 2 bytes 
+\ For 32 bit computer, it would be 4 bytes.
+
+\ 'CELLS' calculates memory size for n CELLS of memory
 
 \ All together it looks like this:
 CREATE MYNUMBERS   10 CELLS ALLOT    \ ok
 
 \ Initialize all the values to 0
-MYNUMBERS 3 CELLS 0 FILL   \ ok
+MYNUMBERS 10 CELLS 0 FILL   \ ok
 
-\ Alternatively we could define ERASE
+\ If we needed to do this a lot, we would define ERASE
 : ERASE  ( addr len -- ) 0 FILL ;
+
+\ ... and do this...
 MYNUMBERS 10 CELLS ERASE
 
 \ or we can CREATE an array initialized with specific values
@@ -245,6 +253,8 @@ MYNUMBERS 1 CELLS + ?    \ 9001 ok
 \ Now we have an array syntax like this.
 20 1 MYNUMBERS [] !    \ ok
    1 MYNUMBERS [] ?    \ 20 ok
+
+\ If you don't like this syntax you free to change it!
 
 \ *Notice there is no index checking. You could add it if you need it.
 
