@@ -22,27 +22,7 @@ HEX 1000 VP !   \ start of free VDP RAM
 : VAR:     ( -- vaddr)   VHERE CONSTANT    0 V,
 : DIM      ( n -- vaddr) VHERE CONSTANT   VALLOT ;
 
-\ create VDP strings
-: VPLACE    ( $adr len VDP-adr -- )  2DUP VC! CHAR+ SWAP VWRITE ;  \ place $adr len in VDP-adr
-: VS,       ( $adr len-- )  VHERE OVER CHAR+  VALLOT VPLACE ;      \ compile counted string at VHERE
-: VCOUNT    ( vdp$adr -- vdpadr len ) DUP 1+ SWAP VC@ ;            \ convert counted string to addr,len
-: VTYPE     ( vdp_addr len -- ) BOUNDS ?DO   I VC@ EMIT   LOOP ;
-
-\ collect characters upto final " and put in VDP memory
-: ="       ( -- addr len)   [CHAR] " PARSE ROT VPLACE ;
-
-: PRINT   CR VCOUNT VTYPE ;
-
-DECIMAL
-80 DIM A$
-80 DIM B$
-80 DIM C$
-
-A$ =" Now is the time for all good men "
-B$ =" to come to the aid of their country."
-
-: TEST 100 0 DO A$ PRINT B$ PRINT LOOP ;
-
+\ see: \DEMO\VDPSTRINGS.FTH  for a real application example
 
 
 

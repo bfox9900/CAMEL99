@@ -47,14 +47,11 @@ HEX
 : ?COLOR ( n -- n )    DUP 16 U>    ABORT" Bad Color" ;
 : ?SCR   ( vdpadr -- ) C/SCR @ CHAR+ > ABORT" Bad VDP adr"  ;
 
-(  TI hardware needs colors combined into 1 byte. This word does it)
-\ : >BYTE  ( nibble nibble -- byte ) 04 LSHIFT + ;  ( used once)
-
 ( takes fg nibble, bg nibble, convert to TI hardware #s)
 ( test for legal values, and combine into 1 byte)
 : >COLR ( fg bg -- byte) 1- ?COLOR SWAP 1- ?COLOR  04 LSHIFT + ;
 
-: >VPOS ( col row -- VPOS)  C/L@ * + ;  \ calc VDP address from row & col
+\ : >VPOS ( col row -- VPOS)  C/L@ * + ;  \ moved to CODE word
 
 ( =============================================================)
 ( T I - B A S I C   S U B - P R O G R A M S   B E G I N )
@@ -113,26 +110,27 @@ HEX
 : GRAPHICS  ( -- )
              1 VMODE !          \ call this video mode 1
              0 380  0 VFILL     \ erase the entire 40 col. screen space
-             20 C/L!            \ 32 chars/line
              E0 DUP KTP C!      \ KSCAN re-writes VDP Reg1 with this byte
       ( -- E0) 1 VWTR           \ VDP register 1  bit3 = 0 = Graphics Mode
              1 6 VWTR           \ set sprite descriptor table to 1x$800=$800
              CTAB 10 10 VFILL   \ set ASCII chars to black on transparent [1,0]
-             8 SCREEN
-             CLEAR ;            \ cyan SCREEN
+             8 SCREEN           \ cyan SCREEN
+             20 C/L!            \ 32 chars/line
+             CLEAR ;
 
 \ CHAR sub-program is renamed to CHARDEF
-\ this version requires that you create a 16 byte buffer with 
+\ this version requires that you create a 8 byte buffer with
 \ the pattern in the buffer. 10X faster than using the stack.
 
-: CHARDEF  ( addr char# --)  ]PDT [ 4 CELLS ] LITERAL  VWRITE  ;    \ ti basic call char
-: CHARPAT  ( addr char# --)  ]PDT SWAP [ 4 CELLS ] LITERAL VREAD ;  \ ti basic call pattern
+: CHARDEF  ( addr char# --)  ]PDT      8 VWRITE ;   \ ti basic call char              
+: CHARPAT  ( addr char# --)  ]PDT SWAP 8 VREAD ;    \ ti basic call charpat
 
-: PATTERN: ( u u u u  -- )
+: PATTERN: ( u u u u  -- )       \ named character pattern, compatible with CHARDEF
+\ USAGE:  HEX 0000 FF00 AABB CCDD PATTERN: SHAPE1
            CREATE     2>R  >R    \ Rpush 3 values so we can reverse order
-           ,  R> , R> , R> , ;    \ compile 4 ints in VDP useable order
+           ,  R> , R> , R> , ;   \ compile 4 ints in VDP useable order
 
-: GCHAR ( row col -- char)  >VPOS VC@ ;
+: GCHAR ( row col -- char) AT-XY VPOS VC@ ;
 
 ( ** NOTE: for HCHAR & VCHAR you must give the number of repetitions )
 : HCHAR  ( col row char cnt -- ) \ parameter order not ideal so we shuffle
@@ -141,8 +139,8 @@ HEX
           R>  2DUP + ?SCR    \ bring back count add to Vadr and see if it's too many
           R>  VFILL ;        \ bring back char and FILL Video memory
 
-: VCHAR  ( x y char cnt -- ) \ parameter order not ideal so we shuffle
-          >R >R              \ ( -- x y )  push char & cnt to rstack
+: VCHAR  ( col row char cnt -- ) \ parameter order not ideal so we shuffle
+          2>R                \ ( -- x y )  push char & cnt to rstack
           >VPOS              \ ( -- vdpaddr) calc the Video position in memory
           C/SCR @ 1- SWAP    \ ( -- lim vdpaddr) End of screen - 1, is the Video Limit
           R> SWAP            \ ( -- lim char vadr) get the char and reverse order

@@ -77,16 +77,51 @@ USIZE MALLOC CONSTANT TASK1
 
 \ ===============================================
 \ sound list examples
-: BYTE ( -- )
+
+: ?BYTE ( n -- ) FF00 AND  ABORT" Not a byte" ;
+
+: BYTE ( -- )   \ puts bytes in
          BEGIN  [CHAR] , PARSE-NAME DUP
          WHILE
-            EVALUATE  DUP FF00 AND  ABORT" Not a byte"
+            EVALUATE DUP ?BYTE
             C,
          REPEAT
          2DROP ;
+         
+VARIABLE VP   \ VDP RAM pointer
+HEX 1000 VP !
+
+: VC,   ( c -- ) VP @ VC!  1 VP +! ;
+
+: VCREATE ( <text> -- ) VP @ CONSTANT ;
+
+: VBYTE ( -- )
+         BEGIN  [CHAR] , PARSE-NAME DUP
+         WHILE
+            EVALUATE DUP ?BYTE
+            VC,
+         REPEAT
+         2DROP ;
+
 
 : /END   0 C,  ALIGN  ;   \ compile zero, force even memory boundary
 
+
+: PLAY$ ( sound_string -- ) \ play 1 sound string
+       COUNT                \ -- addr len
+       2DUP + VC@  >R        \ get duration at end of string, Rpush
+       BOUNDS               \ convert addr/len to end-addr. start-addr.
+       DO  I C@ SND! LOOP   \ feed bytes to sound chip
+       R> JIFFS ;           \ use the delay from Rstack (JIFF=1/60)
+
+: PLAYLIST   ( addr -- )    \ play a TI sound list
+         BEGIN DUP C@ WHILE \ while the length is not 0
+            PAUSE           \ give somebody else some time
+            DUP PLAY$       \ play a single string
+            COUNT + 1+      \ advance to the next sound string
+         REPEAT
+         SILENT
+         DROP ;             \ mom said always clean up after yourself
 HEX
  CREATE MUNCHMAN
        BYTE 08,85,2A,90,A6,08,B0,CC,1F,12
@@ -103,23 +138,23 @@ HEX
        BYTE 02,8A,0A,02
        BYTE 03,AC,1A,B7,08
  /END
- 
-CREATE NOKIA
-       BYTE 01,9F,20,
-       BYTE 03,90,85,05,09,
-       BYTE 02,8F,05,09,
-       BYTE 02,87,09,12,
-       BYTE 02,87,08,12,
-       BYTE 02,85,06,09,
-       BYTE 02,81,07,09,
-       BYTE 02,8E,0B,12
-       BYTE 02,8A,0A,12,
-       BYTE 02,81,07,09,
-       BYTE 02,8F,07,09,
-       BYTE 02,8A,0C,12,
-       BYTE 02,8A,0A,12,
-       BYTE 02,8F,07,24,
-       BYTE 01,9F,00,
+
+VCREATE NOKIA
+       VBYTE 01,9F,20,
+       VBYTE 03,90,85,05,09,
+       VBYTE 02,8F,05,09,
+       VBYTE 02,87,09,12,
+       VBYTE 02,87,08,12,
+       VBYTE 02,85,06,09,
+       VBYTE 02,81,07,09,
+       VBYTE 02,8E,0B,12
+       VBYTE 02,8A,0A,12,
+       VBYTE 02,81,07,09,
+       VBYTE 02,8F,07,09,
+       VBYTE 02,8A,0C,12,
+       VBYTE 02,8A,0A,12,
+       VBYTE 02,8F,07,24,
+       VBYTE 01,9F,00,
 /END
 
 

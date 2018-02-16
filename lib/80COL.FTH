@@ -19,4 +19,10 @@ DECIMAL
 : TINT     ( fg bg -- ) SWAP 4 LSHIFT +  7 VWTR ;
 
 : 80COLS   ( -- ) TEXT 80COL COUNT VREGS  80 C/L!  PAGE  80 VMODE ! ;
-: GRAPHICS ( -- ) TEXT GRAPHICS ;
+
+\ You need to LOAD GRAFIX2.FTH first if you are using 80COLS and GRAPHICS
+ : GRAPHICS ( -- ) TEXT GRAPHICS ;
+
+80COLS 
+WARM
+
