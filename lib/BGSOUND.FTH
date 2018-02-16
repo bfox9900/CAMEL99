@@ -103,25 +103,8 @@ HEX 1000 VP !
          REPEAT
          2DROP ;
 
-
 : /END   0 C,  ALIGN  ;   \ compile zero, force even memory boundary
 
-
-: PLAY$ ( sound_string -- ) \ play 1 sound string
-       COUNT                \ -- addr len
-       2DUP + VC@  >R        \ get duration at end of string, Rpush
-       BOUNDS               \ convert addr/len to end-addr. start-addr.
-       DO  I C@ SND! LOOP   \ feed bytes to sound chip
-       R> JIFFS ;           \ use the delay from Rstack (JIFF=1/60)
-
-: PLAYLIST   ( addr -- )    \ play a TI sound list
-         BEGIN DUP C@ WHILE \ while the length is not 0
-            PAUSE           \ give somebody else some time
-            DUP PLAY$       \ play a single string
-            COUNT + 1+      \ advance to the next sound string
-         REPEAT
-         SILENT
-         DROP ;             \ mom said always clean up after yourself
 HEX
  CREATE MUNCHMAN
        BYTE 08,85,2A,90,A6,08,B0,CC,1F,12
