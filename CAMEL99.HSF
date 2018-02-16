@@ -351,7 +351,7 @@ TARGET-COMPILING
       3A USER: SOURCE-ID           \ =true if EVALUATE is running, false otherwise
       3C USER: 'SOURCE             \ WATCH OUT! This is 2variable, occupies 3C and 3E
 \     3E USER: 'SOURCE2
-
+                                                                                                                                                 
 \      40 USER: CURRENT
 \      42 USER: CONTEXT
 \      44 USER:
@@ -420,6 +420,7 @@ TARGET-COMPILING
 : ]          ( -- ) STATE ON  ;  XIMMEDIATE \ turn on the compiler
 : [          ( -- ) STATE OFF ;  XIMMEDIATE \ turn off the compiler
 
+\ ========================================================================
 \ MINIMALIST HEAP MEMORY MANAGER
 \ Used within a colon defintion these words provide simple dynamic
 \ memory management.
@@ -433,13 +434,13 @@ TARGET-COMPILING
 
 \                < more code...>
 
-\                100 FREE ;
+\                100 MFREE ;
 
 \ create a 1K buffer at compile time
 \ HEX 400 MALLOC CONSTANT MYBUFFER
 
 : MALLOC     ( n -- addr ) H @  SWAP H +! ;   \ allocate heap and return pointer
-: MFREE       ( n -- ) NEGATE H +! ;           \ free heap memory
+: MFREE      ( n -- ) NEGATE H +! ;           \ free n bytes of heap memory
 
 [cc] cr .( Stack primitives ...)  [tc]
 \ ========================================================================
@@ -447,8 +448,8 @@ TARGET-COMPILING
 \ most stack primitives have been implemented in ASSEMBLER for speed
 
 : TUCK  ( w1 w2 --  w2 w1 w2 ) SWAP OVER ;
-\ : 2>R    ( w w --)  >R >R ;                      \ 3x bigger in ASSEMBLER
-\ : 2R>    ( -- w w ) R> R> ;                      \ 3x bigger in ASSEMBLER
+\ : 2>R    ( w w --) >R >R ;                      \ 3x bigger in ASSEMBLER
+\ : 2R>    ( -- w w) R> R> ;                      \ 3x bigger in ASSEMBLER
 : 2OVER  ( d d2 - d d2 d)  2>R 2DUP  2R> 2SWAP ; \ 1.5x bigger in ASSEMBLER
 
 \ ========================================================================
@@ -477,28 +478,29 @@ TARGET-COMPILING
 \ M I X E D  (32BIT/16BIT)   M A T H   O P E R A T I O N S
 \ Some double-precision arithmetic operators are needed to implement
 \ ANSI numeric conversion in CAMEL Forth.
+0  [IF]
 
-\ *****
-\ NOTE:
+[CC] include cc9900\cclib\floored.hsf
+
+[ELSE]
+\ === SMALLER FASTER NON-ANS COMPLIANT ===
 \ Removed signed multiplication and division operators to save space.
 \ Substituted TMS9900 machine multiplication and division.
-\ You can load CAMEL Forth signed operators from file SIGNED.HSF in the
-\ LIB folder for compatability with ANS/ISO Forth as needed.
-\ I also replaced M* with UM* to save space
-\ This also improves the speed of the kernel generally.
+\ You can load CAMEL Forth floored division above from the
+\ /cclib folder for compatability with ANS/ISO Forth as needed.
+\ I also replaced M* with UM* to save space in the standard build.
+\ This all improves the speed of the kernel but some code
+\ will not work per ANS requirements
 \ *****
 
 : */MOD       ( n1 n2 n3 -- n4 n5)  >R UM* R> UM/MOD ;   \ n1*n2/n3, rem&quot
-
-: S>D         ( n -- d)     DUP 0< ;
-
-: /MOD        ( n1 n2 -- n3 n4)  >R S>D R> UM/MOD ;      \  divide/remainder
-
+: /MOD        ( n1 n2 -- n3 n4)  >R 0 R> UM/MOD ;        \  divide/remainder
 \ : *  ( n n -- n)  UM* DROP ;   \ same size in ASM, 4 bytes, much faster
-
-: /           ( n n -- n)   /MOD NIP  ;     \ these are smaller than CODE words. (4 bytes each)
+: /           ( n n -- n)   /MOD NIP  ;    \ these are smaller than CODE words. (4 bytes each)
 : MOD         ( n n -- n)   /MOD DROP ;
 : */          ( n n n -- n) */MOD NIP ;
+
+[THEN]
 
 \ ========================================================================
 \ S T R I N G   T H I N G S
@@ -631,7 +633,17 @@ TARGET-COMPILING
 \ S I M P L E   S O U N D  I N T E R F A C E
 TARGET-COMPILING
 
-: SND!       ( c -- ) 8400 C!  ;            \ write a byte to address of TMS9919 chip
+: SND!       ( c -- ) 8400 C!  ;          \ write a byte to address of TMS9919 chip
+                                          \ 276uS
+\ CROSS-ASSEMBLING
+\ CODE: SND!  ( c -- )       \ 2 bytes bigger 149uS
+\           TOS SWPB,
+\           TOS 8400 @@ MOVB,
+\           TOS POP,
+\           NEXT,
+\          END-CODE
+
+TARGET-COMPILING
 
 : BEEP       ( -- )
              80 SND! 5 SND!                 \ precalulated values for OSC1 1328Hz
@@ -659,7 +671,7 @@ TARGET-COMPILING
 FORTH cr .( Console output)
 \ Most of the video driver is in Forth. We use Assembler to update the
 \ screen position variables mostly to save space but it is faster too.
-\ We also write the character to the screen in ASM using VC!.
+\ We also write the character to the screen in ASM using VEMIT.
 
 TARGET-COMPILING
 \ pronounced "SEE-PER-ELL-STORE"
@@ -686,37 +698,42 @@ TARGET-COMPILING
 \                -1k bytes in 40 column mode
 \                -80cols needs 1920 bytes!
 
-
-
 0 [IF]
-\ this the fast scroll with a HUGE buffer dynamically allocated & freed
-: SCROLL      ( -- ) \ ** 68 bytes
+\ this the faster scroll with a HUGE buffer dynamically allocated & freed
+\ 4.15 SECS to display 344 words from bottom line. 
+\ **Uses 1920 bytes of heap in 80 column mode**
+ : SCROLL      ( -- )
               PAUSE
-              C/SCR @ MALLOC >R                \ allocate a buffer, push address to rstack
-              VTOP @ R@  C/SCR @ VREAD         \ copy screen from >0000 into buffer
-              R@  C/L@ +                       \ calc. the address of 2nd line in the buffer
-              VTOP @  C/SCR @ C/L@ - VWRITE    \ write buffer from 2nd line to top of screen
-              R> DROP                          \ remove buffer addr. from rstack
-              C/SCR @ MFREE                    \ release the memory
-              0 17 AT-XY  VPOS C/L@ BL VFILL ; \ place cursor on last line & clear line
+              C/SCR @ DUP >R                  \ save screen size on rstack
+              MALLOC ( -- heap)               \ allocate heap for 1 full screen
+              VTOP @ OVER ( -- heap VDPaddr heap)
+              2DUP         R@ VREAD           \ read screen to heap
+              SWAP C/L@ -  R@ VWRITE          \ write (buffer - c/l) to top of screen
+              DROP                            \ drop heap pointer
+              R> MFREE                        \ de-allocate heap memory
+              0 17 AT-XY  VPOS C/L@ BL VFILL ;  \ place cursr & clear last line
 
 [ELSE]
-
 \ this is a smaller line by line scroll uses only 1 line of bytes for buffer size.
+\ (MODIFIED TO USE A 2 LINE BUFFER. Seems to work ok)
 \ *the buffer is dynamically allocated and de-allocated
-\ It is about 12% slower than the huge buffer version because of DO/LOOP overhead
+\ 1 LINE BUFFER:  5.00 SECS to display 344 words from bottom line
+\ 2 LINE BUFFER:  4.70 SECS to display 344 words from bottom line
+\ 4 LINE BUFFER:  4.34 SECS to display 344 words from bottom line
+\ 8 LINE BUFFER:  4.26 SECS to display 344 words from bottom line
 : SCROLL      ( -- )
-              C/L@ MALLOC ( -- heap)          \ allocate heap for 1 line
-              L/SCR 1                         \ loops from 1 to 24
+              C/L@ DUP MALLOC ( -- c/l heap) \ allocate heap for 1 line & remember amount
+              C/SCR @  C/L@                  \ loops from 2nd line to end of screen
               DO
                  PAUSE
-                 I  C/L@ * OVER     ( -- VDPaddr heap)
+                 I OVER     ( -- c/l heap VDPaddr heap)
                  2DUP          C/L@  VREAD    \ read line to heap
                  SWAP C/L@ -   C/L@  VWRITE   \ write HEAP to line above
-              LOOP
+              C/L@ +LOOP                      \ advance loop to next line address
+
               0 17 AT-XY  VPOS C/L@ BL VFILL  \ place cursr & clear last line
               DROP                            \ drop heap pointer
-              C/L@ MFREE ;                    \ de-allocate heap memory
+              MFREE ;                         \ de-allocate heap memory
 
 [THEN]
 
@@ -725,13 +742,13 @@ TARGET-COMPILING
 : ?SCROLL     ( -- )       VROW @ 23 > IF SCROLL THEN ; \ if VROW is past last row ... scroll!
 : CR          ( -- )       <CR>  ?SCROLL ;
 : EMIT        ( char -- )  VEMIT ?SCROLL ;
-: TYPE        ( adr cnt --) BOUNDS ?DO  I C@ EMIT  LOOP ;
+: TYPE        ( adr cnt --) PAUSE BOUNDS ?DO   I C@ EMIT  LOOP ;
 
 : PAGE        ( -- )
-              VTOP @ C/SCR @ BL VFILL         \ fill VDP memory from address 0 with blanks
-              0 0 AT-XY ;
+              VTOP @ C/SCR @ BL VFILL          \ fill VDP memory from address 0 with blanks
+              0 0 AT-XY ;                      \ home the cursor
 
-: SPACE       ( -- )   BL EMIT ;                \ EMIT a blank. (BL)
+: SPACE       ( -- )   BL EMIT ;               \ EMIT a blank. (BL)
 : SPACES      ( n -- ) 0 MAX  0 ?DO SPACE LOOP ;
 
 \ ========================================================================
@@ -745,7 +762,6 @@ TARGET-COMPILING
 \ Re-solve CROSS-COMPILER Forward reference for '(S") and 'TYPE
 CROSS-COMPILING
 
-\ T' (.")  RESOLVES '(.")
 T' (S")  RESOLVES '(S")
 T' TYPE  RESOLVES 'TYPE
 
@@ -755,33 +771,28 @@ T' TYPE  RESOLVES 'TYPE
 
 TARGET-COMPILING
 
-\ : KBRD       ( c -- ) 3 - KUNIT# C! ;        \ set the keyboard number.
-
-: KEY?       ( -- ? ) 0 (KEY?) ;               \ test if key pressed
+: KEY?       ( -- ? ) 0 (KEY?) ;               \ test default key pressed
 
 : KEY        ( -- char)                        \ simple non-repeating KEY
               BEGIN
                 PAUSE                          \ multi-tasking switch
                 CURS@ VPOS VC!                 \ show the flashing cursor
-\               0 83C8 !   \ clear previous scan codes for repeating
-                KEY?                           \ $0500 is BASIC keyboard
+                KEY?
               UNTIL                            \ wait for key press
               KVAL C@                          \ fetch char from KSCAN buffer
-              BL VPOS VC! ;                    \ erase cursor
-
-\ : KEY   ( -- ) 'KEY @ EXECUTE ;                \ vectorable KEY
+              BL VPOS VC! ;                    \ erase cursor character
 
 : BS  ( n --)  VCOL @ SWAP -  0 MAX VCOL ! ;   \ do 'n' backspaces.
 
 \ High level: input/output                     (c) 31mar95 bjr
 : ACCEPT      ( c-addr +n -- +n')              \ get line from terminal
               OVER + 1- OVER
-              BEGIN  KEY DUP 0D <>             \ assumes we use PASCAL keybrd (#4)
+              BEGIN  KEY DUP 0D <>             \ test for enter (hex D)
               WHILE
                 DUP EMIT
                 DUP 8 =                        \ test for back-space character
                 IF   DROP 1-  >R OVER R> UMAX  \ move the buffer pointer back
-                     2 BS SPACE  1 BS          \ BF mod: handle backspace on the Video screen
+                     2 BS  BL VPOS VC!         \ BF mod: handle backspace on the Video screen
 
                 ELSE OVER C!  1+ OVER UMIN
                 THEN
@@ -801,16 +812,17 @@ TARGET-COMPILING
 \ the output buffer is built backwards in memory at #PAD.
 
 TARGET-COMPILING
-: UD/MOD      ( ud1 u2 -- u3 ud4)
-         >R 0 R@ UM/MOD -ROT R> UM/MOD ROT  ;             \ 32/16->32 divide
+: UD/MOD ( ud1 u2 -- u3 ud4)
+         >R 0 R@ UM/MOD -ROT R> UM/MOD ROT ;   \ 32/16->32 divide
 
 : HOLD   ( char -- )        -1 HP +!  HP @ C! ;               \ decr. HOLD pointer HP, Store char at the address contained in HP
 \ : >DIGIT ( n -- c)          DUP 9 > 7 AND + 30 + ;          \ convert n to ascii digit c (*Moved to ASM word because it is in a loop)
 : <#     ( --)              #PAD HP ! ;                       \ initialize Hold Pointer to end of the number buffer (#pad)
 : #      ( ud1 -- ud2)      BASE @ UD/MOD ROT >DIGIT HOLD ;   \ convert 1 digit & store at HP, return remainder
-: #S     ( ud1 -- ud2)      BEGIN # 2DUP OR  0= UNTIL ; \ convert all digits in ud1. ud2 will be 0 (the remainder)
+: #S     ( ud1 -- ud2)      BEGIN # 2DUP OR  0= UNTIL ;       \ convert all digits in ud1. ud2 will be 0 (the remainder)
 : #>     ( ud1 -- c-addr u) 2DROP HP @ #PAD OVER - ;          \ return a stack string (address, length)  of the converted number
 : SIGN   ( n -- )           0< IF T[CHAR] -  HOLD THEN ;      \ if 'n'<0  add '-' char  string created in #PAD
+\ : S>D    ( n -- d)     DUP 0< ;                               \ signed int->signed double
 \ : UD.    ( d -- )   <#  #S  #>  TYPE SPACE ;                \ print 'd' as 32 bit un-signed integer
 \ : U.     ( u -- ) S>D UD. ;                                 \ print 'n' as 16 bit un-signed integer
 : U.     ( u -- )         0  <#  #S  #>  TYPE SPACE ;         \ print 'u' as an un-signed integer (the '0' converts u to a double(32bit) int)
@@ -836,20 +848,21 @@ TARGET-COMPILING
 \ With this definition the Forth compiler will be happy to define QUIT below.
 \ All QUIT needs is a word called INTERPRET. It does not care that it is not ready to work yet.
 
-: INTERPRET    ( addr len -- )  'INTERPRET @ EXECUTE ;       \ fetch the XT and pass to execute
+: INTERPRET    ( addr len -- )  'INTERPRET @ EXECUTE ;  \ fetch the XT and pass to execute
 
 \ **later in the code we MUST store an XT in 'INTERPRET or the system will crash
 
 \ ========================================================================
 \ Q U I T :  The  O U T E R   I N T E R P R E T E R
 
-\ this is the Forth REPL (read,evaluate,print loop)
+\ QUIT is the Forth REPL (read,evaluate,print loop)
 : QUIT         ( -- )
                L0 LP !                                       \ init LEAVE stack pointer LP
                RP0 RP!                                       \ RESET RSTACK & STATE
                t[COMPILE] [                                  \ STATE = 0 (Interpreting mode)
                BEGIN
-                  TIB DUP TIB# ACCEPT SPACE INTERPRET        \ accept terminal input buffer
+                  TIB DUP TIB# ACCEPT SPACE ( -- adr len)    \ accept input to TIB, maxlen=TIB#
+                  INTERPRET                                  \ interpret reads the stack string
                   STATE @ 0= IF  T."  ok" cr THEN            \ if we are not compiling print OK
                AGAIN ;
 
@@ -952,7 +965,7 @@ TARGET-COMPILING
 
 : <INTERPRET>  ( i*x c-addr u -- j*x )    \ ; ref. dpANS-6, 3.4 The Forth Text Interpreter
                'SOURCE 2!  >IN OFF
-               BEGIN  
+               BEGIN
                   BL WORD DUP C@
                WHILE            \ -- caddr
                   FIND                                \ -- xt 0/1/-1
@@ -961,27 +974,24 @@ TARGET-COMPILING
                        IF EXECUTE ELSE , THEN         \ execute or compile, that's all there is
                   ELSE                                \ -- textadr
                        ?NUMBER
-                       IF  t[COMPILE] LITERAL         \ converted ok
-                       ELSE COUNT ?ABORT              \ error. print bad word & ABORT
+                       IF  t[COMPILE] LITERAL         \ converted ok so compile as a literal
+                       ELSE COUNT ?ABORT              \ ERROR: print the bad word & ABORT
                        THEN
                   THEN
-                  ?STACK
+                  ?STACK                              \ test for stack underflow
                REPEAT
                DROP ;
 
 \ ========================================================================
 \ R E S O L V E   F O R W A R D   R E F E R E N C E
 \ remember how we fooled the compiler?
-\ Here is finish off the process.
+\ Here is the finish off the process.
+
+\ To find the XT of a word in the TARGET Forth we us the word T'
+\ which returns the XT or aborts and T! which stores a number in
+\ a TARGET memory address.
 
 CROSS-COMPILING
-
-\ to get at stuff in the TARGET memory we us the Forth words '
-\ which looks up the code field address of a word,
-\ and ! which stores a number in an address.
-
-\ BUT we have to use the TARGET COMPILER versions that are T' and T!
-
  T' <INTERPRET>  'INTERPRET ( -- addr variable) T!
 
 \ ======================================================================
@@ -1045,11 +1055,15 @@ TARGET-COMPILING
 
 \ ========================================================================
 \ ADD-ONS
-\ [CC] include cc9900\cclib\tools.hsf
+ [CC] include CC9900\cclib\cru.hsf
+ [CC] include cc9900\cclib\tools.hsf
+\ [CC] include CC9900\cclib\mem2mem.hsf
+\ [cc] include cc9900\cclib\map.hsf
 \ [CC] include cc9900\cclib\grafix2.hsf
 \ [CC] include cc9900\cclib\groms.hsf
+\ [CC] include cc9900\cclib\mtask99.hsf
+\ [CC] include cc9900\cclib\sbosbz.hsf
 \ [CC] include cc9900\tifile\filesys.hsf
-  [CC] include cc9900\cclib\mtask99.hsf
 
 \ =======================================================================
 \ T E S T   C O D E   G O E S   H E R E
@@ -1061,6 +1075,7 @@ TARGET-COMPILING
 \ : DUP@2  INLINE[ DUP @ ] ;
 \ : *+     INLINE[ * + ]   ;
 \ : ^2     INLINE[ DUP * ] ;
+
 
 \ =======================================================================
 \ LOOPS AND BRANCH COMPILERS FOR FINAL SYSTEM
@@ -1094,19 +1109,18 @@ CODE: INIT    WRKSP0 LWPI,
 \ =======================================================================
 \ B O O T   U P   C O D E
 TARGET-COMPILING
-: WARM        SP0 SP!           \ WARM does not destroy dictionary or heap
+: WARM        SP0 SP!           \ WARM boot does not destroy dictionary or heap
               HEX
               TMR!
               3 KUNIT# C!
               PAGE BEEP T." CAMEL99 MultiForth V1.99    B Fox 2018"
               CR QUIT ;
 
-: COLD        80 83C2 C!       \ COLD resets the system
+: COLD        80 83C2 C!       \ COLD boot resets the system
               ORGDP @ DP !
               ORGLAST @ LATEST !
               2100 H !         \ inits H (HEAP) to >2100
               TEXT             
-
               WARM ;
 
 
@@ -1133,7 +1147,7 @@ TARGET-COMPILING
 
  X: :NONAME    HERE  !CSP  (:NONAME)  ;X
 
- X: ;     [  REVEAL  COMPILE EXIT  ?CSP   ;X  XIMMEDIATE
+ X: ;          [  REVEAL COMPILE EXIT ?CSP ;X  XIMMEDIATE
 
 [CC]
 \           F O R T H   S Y S T E M   C O D E   E N D S

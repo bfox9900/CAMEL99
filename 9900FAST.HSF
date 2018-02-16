@@ -231,11 +231,11 @@ CODE: DOVAR   ( -- addr)                           \ Executor that executes a "V
 CODE: DOUSER ( -- addr)
               TOS PUSH,                            \ Executor that executes a "USER VARIABLE" (local to each task)
               TOS STWP,                            \ store workspace register WP in TOS
-              *W TOS ADD,                          \ add the offset stored in the USER variable's parameter field
+             *W TOS ADD,                           \ add the offset stored in the USER variable's parameter field
               NEXT,
               END-CODE
 
-\ ==========================================================================
+\ ==================================================
 \ DODOES is the code action of a DOES> clause.
 \ For ITC Forth:
 \ defined word:  CFA: doescode
@@ -635,14 +635,6 @@ CODE: LSHIFT  ( n bits -- n')
 CODE: INVERT  ( u -- w)
               TOS INV,       \ 10  vs  14 in stack memory
               NEXT,
-              END-CODE
-
-CODE: UM+    ( u u -- ud )
-             *SP TOS ADD,    \ 18
-             *SP CLR,        \ 10
-              @@1 JNC,       \ 10
-             *SP INC,        \ 14
-@@1:          NEXT,          \ 52
               END-CODE
 
 \ : +   ( u1 u2 -- u ) UM+ DROP ;  original Camel Forth code is bigger
@@ -1097,8 +1089,8 @@ CODE: (FIND) ( Caddr NFA -- XT ? )
               R5 INC,                     \ 1+ to account for length byte
 \ OUTER loop
              \ load char compare registers
-@@1:          R5 R0 MOV,                  \ load R0 with length of caddr
-              R8 R1 MOV,                  \ load R1 with string address
+@@1:          R5 R0 MOV,                  \ load R0 with length of caddr string
+              R8 R1 MOV,                  \ load R1 with caddr string address
               R3 R2 MOV,                  \ load R2 with the NFA to compare
 
              \ inner character comparator loop
@@ -1141,7 +1133,7 @@ CR ." V D P  C H I P  I N T E R F A C E"
 \ We took a Forth approach to naming VDP memory routines.
 \ So VSBR becomes VC@  and VSBW becomes VC!.
 \ VMBW and VMBR become VWRITE AND VREAD.
-\ We also added a new one V! and V@ then load and store 16 bit numbers to VDP
+\ We also added a new one V! and V@ that load and store 16 bit numbers to VDP
 
 \ And I embraced the Forth paradigm so these routines are created as
 \ Forth words. This gives us the freedom to call these fast routines
@@ -1149,7 +1141,7 @@ CR ." V D P  C H I P  I N T E R F A C E"
 \ With these fast primitives we can write most of the VDP driver
 \ in Forth and still get excellent performance.
 
-\ factored sub-routine. Sets up VDP address
+\ factored sub-routines. Set up VDP address for write or read modes
 l: WMODE      R0 4000  ORI,             \ set control bits to write mode (01)
 l: RMODE      0 LIMI,
               R0 SWPB,                  \ R0= VDP-adr, set the VDP WRITE address
@@ -1173,10 +1165,10 @@ CODE: V@     ( VDPadr -- n)             \ video fetch 16bit int
               RMODE @@ BL,              \ set address in read mode
               R3 VDPRD LI,              \ put the VDP read port address in R3. 12.9% faster
               TOS CLR,
-             *R3  TOS MOVB,        \ READ char from VDP RAM into TOS
-              TOS SWPB,
-             *R3  TOS MOVB,        \ READ char from VDP RAM into TOS
-              TOS SWPB,
+             *R3  TOS MOVB,             \ READ char from VDP RAM into TOS
+              TOS SWPB,                 \ move byte to other side
+             *R3  TOS MOVB,             \ READ 2nd char from VDP RAM into TOS
+              TOS SWPB,                 \ put the integer in correct byte order for integer
               NEXT,
               END-CODE
 
@@ -1289,7 +1281,9 @@ l: _VPOS   ( -- VDP-addr)             \ return current video position (screen ad
               RT,
               END-CODE
 
-CODE: VPOS    _VPOS @@ BL, NEXT, END-CODE
+CODE: VPOS   _VPOS @@ BL,             \ call _VPOS to create a Forth word
+              NEXT,
+              END-CODE
 
 CODE: >VPOS ( col row -- vaddr)       \ compute vdp address from col,row
               TOS    R3 MOV,
@@ -1299,17 +1293,17 @@ CODE: >VPOS ( col row -- vaddr)       \ compute vdp address from col,row
               END-CODE
 
 \ sub-routine CR common factor
-l: _CR       _VROW @@ INC,             \ INC. row counter
-             _VCOL @@ CLR,             \ reset/track the video column
-             _OUT @@ CLR,              \ OUT counts chars on current line
+l: _CR       _VROW @@ INC,            \ INC. row counter
+             _VCOL @@ CLR,            \ reset/track the video column
+             _OUT @@ CLR,             \ OUT counts chars on current line
               RT,
 
-CODE: <CR>   ( -- )                    \ calculate the new cursor position for a carriage return
+CODE: <CR>   ( -- )                   \ calculate the new cursor position for a carriage return
              _CR @@ BL,
               NEXT,
               END-CODE
 
-CODE: VEMIT  ( char -- )  \ FORTH equiv: VPOS VC!  1 VCOL +! ;  ASM Takes 2 extra bytes but faster
+CODE: VEMIT  ( char -- ? )  \ FORTH equiv: VPOS VC!  1 VCOL +! ;  ASM Takes 2 extra bytes but faster
              _VPOS @@ BL,               \ calc. video address fromr row,col
               TOS R0 MOV,               \ move video address into R0
               WMODE @@ BL,              \ branch to setup VDP write address
@@ -1353,6 +1347,7 @@ CODE: DXY ( x2 y2 x1 y1 --- x^2 y^2 )  \ use by SP.DIST
              NEXT,            \ 16 bytes
              END-CODE
 
+\ V 1.98: Used Forth code for these in SPRITES.FTH to save kernel space
 \ CODE: VECT+ ( x y dx dy -- yyxx )  \ Compute new sprite location
 \            *SP+ R0 MOV,     \ vx->R0
 \            *SP+ TOS ADD,    \ y + dy ->TOS
@@ -1406,8 +1401,8 @@ CODE: ?TERMINAL ( -- ?)    \ 170uS, 16 bit ROM speed. Same name as TI-Forth
             TOS      CLR,
             0020 @@  BL,          \ Call ROM code, test FNCT 4 key press
             @@1      JNE,         \ if not pressed get out
-            TOS      SETO,        \ **R12 will be modified**
-@@1:        NEXT,
+            TOS      SETO,        
+@@1:        NEXT,                 \ **R12 will be modified now**
             END-CODE
 
 
@@ -1427,7 +1422,8 @@ CODE: BYE    ( -- )
             0000 @@ BLWP,             \ ROM reset vector is at 0000
             END-CODE
 
-\ : >DIGIT  DUP 9 > 7 AND + 30 + ;    \ 1/2 size, 4X faster
+\ : >DIGIT  DUP 9 > 7 AND + 30 + ;    
+\ ASM is 2 bytes smaller 4X faster
 CODE: >DIGIT  ( n -- c)               \ convert n to ascii digit c
             TOS 9 CMPI,
             @@1 JLE,                  \ if n<=9 jump to convert it
@@ -1436,32 +1432,14 @@ CODE: >DIGIT  ( n -- c)               \ convert n to ascii digit c
             NEXT,
             END-CODE
 
-CODE: LIMI0   0 LIMI, NEXT, END-CODE  \ disable interrupts
-CODE: LIMI2   2 LIMI, NEXT, END-CODE  \ enable interrupts
+\ CODE: LIMI0   0 LIMI, NEXT, END-CODE  \ disable interrupts
+\ CODE: LIMI2   2 LIMI, NEXT, END-CODE  \ enable interrupts
 
 \ ===================================================================
-\ multi-tasking support words
+\ multi-tasking support
 CODE: PAUSE   ( -- )                  \ MULTI-TASKER switcher needed by I/O words in Kernel
             NEXT2 CFA!                \ patch CODE address with NEXT (replaced for multi-tasking)
             END-CODE
-
-0 [IF] \ These words are compile by MTASK99.HSF
-CODE: MYSELF ( -- PID)    \ return my "Process ID" ( ie: the workspace)
-            TOS PUSH,
-            TOS STWP,      \ fetch the cpu WP register to Forth TOS
-            NEXT,
-            END-CODE
-
-CODE: YIELD  ( -- )    \ high-speed task switcher
-              BEGIN,                 \ CURRENT TASK:
-                 RTWP,               \ one instruction switches context        14
-\ -----------------------------------------------------------------------------------------
- l: _TSTAT       R1  STWP,           \ NEXT TASK: store NEW workspace in R1     8
-                 32 (R1) R0 MOV,     \ Read local TFLAG to see if I am awake   28
-              NE UNTIL,              \ loop thru tasks until TFLAG is <> 0     10
-              NEXT,                  \ if task is awake, run next            \ 60 *.333 = 20uS
-              END-CODE
-[THEN]
 
 
 cr .( Code primitives complete)
