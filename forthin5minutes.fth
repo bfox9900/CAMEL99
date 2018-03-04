@@ -95,20 +95,34 @@ HEX
 \ WORDs can be combined with other words to any depth
 : 2(X^2) ( n -- n) SQUARED  2 * ; \ returns  2(n^2)
 
-\ Printing text is a little weird but workable.
+\ Printing text is unusua but workable.
 \ ANS Forth has ." to print a text string inside a compiled word.
-\ If you want to print text in the interpreter use .(  
-\ Remember to put space between ." or .( and the text!
+\ There are two unusual things about "dot-quote", as it is called.
 
-\ CR (carriage return) is the word for a new line
+\ 1. You must put a space after ."
+\    Do you understand why? Because it is a Forth word like all the rest.
 
-CR .( This message will print from the interpreter)
-CR .( This is also called a "talking comment")
-CR .( It is used to inform the programmer while file is compiling)
+\ 2. "dot-quote"is a state-smart word. This means it does one thing in compiling mode
+\     and something else in immediate mode (interpreting)
+
+\  In compile mode it has to "compile" strings of text into a new word definition.
 
 : HELLO  
          CR ." Hello World!"  
-	 CR ." is how we print inside the compiler" ;
+	 CR ." uses 'dot-quote' in the word HELLO" ;
+	 
+HELLO	
+\ CR (carriage return) is the word for a new line
+
+In IMMEDIATE mode it simply has to type a string to the output device.
+
+\ You can also print text in the interpret mode ONLY using .(  
+\ This is called a talking comment.
+CR .( This message will print from the interpreter)
+CR .( This is also called a "talking comment")
+CR .( It is used to inform the programmer while a file is compiling)
+
+\ Remember to put space between ." or .( and the text!
 
 \ -------------------------------- Conditionals --------------------------------
 \ TRUE and FALSE are constants in CAMEL99. TRUE returns -1  FALSE returns 0
@@ -139,15 +153,22 @@ MYLOOP
 \ Hello! ok
 
 \ `DO` expects two numbers on the stack: the end number and the start number.
-
+\ (the loop limit and the loop index)
 \ We can get the value of the index as we loop with `I`:
 : ONE-TO-12 ( -- ) 12 0 DO I . LOOP ;     \ ok
-ONE-TO-12   \ 0 1 2 3 4 5 6 7 8 9 10 11 12 ok
+ONE-TO-12   \ 0 1 2 3 4 5 6 7 8 9 10 11 ok
+
+\ Notice the loop stops when the limit and index are equal.
+\ We printed 12 numbers... 0 to 11
 
 \ `?DO` works similarly, except it will skip the LOOP if the end and start
-\ numbers are equal. ( We defined SQUARE earlier so we can use it now)
+\ numbers are equal on the parameter stack. This is used if there is a chance
+\ that limit=index as input arguments and you want to prevent a run-away loop.
+
+( We defined SQUARE earlier so we can use it now)
 : SQUARES ( n -- ) 0 ?DO I SQUARE . LOOP ;   \ ok
 10 SQUARES   \ 0 1 4 9 16 25 36 49 64 81 ok
+0 SQUARES    \ OK
 
 \ Change the looping "step" with `+LOOP`:
 : THREES ( n n -- ) 3 ?DO  I .   3 +LOOP ;  \ ok
@@ -254,7 +275,7 @@ MYNUMBERS 1 CELLS + ?    \ 9001 ok
 20 1 MYNUMBERS [] !    \ ok
    1 MYNUMBERS [] ?    \ 20 ok
 
-\ If you don't like this syntax you free to change it!
+\ If you don't like this syntax you are free to change it!
 
 \ *Notice there is no index checking. You could add it if you need it.
 
