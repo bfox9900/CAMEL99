@@ -49,3 +49,11 @@ CODE:  DUP@  CODE[ DUP @ ]  NEXT,  END-CODE
 And the third way we could do this is to use INLINE[ .  INLINE[ works just like CODE[ but it knows how to leave a threaded code word , enter the ASM code and return back to the Forth threaded word.  There is a small speed penalty at each end of this process so use INLINE[ wisely.  It also increases the size of your code GREATLY because it is literally making a copy of the machine code of each Forth word that you put INLINE[   ].
 
 : DUP@ INLINE[ DUP @ ] . ;
+
+### CREATE HEADLESS WORDS
+Feb 3 2018
+Fixed problem with HEADLESS word so it works now.
+Used HEADLESS to remove ADR>IN word from searchable dictionary in CAMLEL99  binary file. 
+It is used by PARSE AND PARSE-NAME but is not very useful by itself.
+
+
