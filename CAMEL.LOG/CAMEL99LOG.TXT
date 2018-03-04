@@ -1,0 +1,453 @@
+Log for Camel Forth 99   Start Sep 26 2016
+
+This log was started once the cross-assembler/compiler was working reliably
+and the CODE words and  CAMEL99.hsf compiled successfully.
+
+BUG:  DOCON does not seem to push values onto the stack beyond 2 levels?
+      ?DOVAR is mostly the same code and it seems to work fine.
+
+      fixed  *W tos mov,   \ only needed this . duh!
+
+
+
+Oct 16, 2016
+
+BUG CREATE: returns the PFA + 3  in the code ???
+    but variable seems to be OK.
+
+FOUND: DOVAR must DECT W before passing the address to TOS. ?? why?
+
+
+Oct 17, 2016
+
+BUG:  (S") not returning the count. only the address
+
+
+BUG: DROP stopped working
+found: duh! needs NEXT, at the end
+
+bug: ?number  returns correct flag but no number on the stack
+FIXED:
+
+BUG: ! C! 2! not refilling TOS , causing staff crashing in #S etc..
+FIXED:
+
+test:  t."  IT WORKS!
+
+BUG:  aligned was wrong!! @#$!#$^
+
+Fixed: TOS INC,  not TOS dec,   DOOh!
+
+Oct 24
+    bug with C!.  Had to consult Turbo Forth to get it right.
+
+    u. .  not working yet... ?  Fixed UM/MOD
+    Suspect UD/MOD is buggered.  Tested ROT and made it smaller but 4 bytes.
+
+Jan 8 2017
+      Many many changes and bugs fixed.
+      Got my comparisons working.
+      Found bug in forward jumps in the @@1: etc.. labels one day will fix that.
+            - JMP forward 2 bytes too short.
+            - might only be the JMP instruction.. ? how ?
+
+
+       Had everything working with no auto-incr on 'W' in next. realized that it is size
+       and space efficient to use *W+ in NEXT, but cant't get system to run with it.
+       Much testing needed again to get back to where I was 3 months ago....
+
+      Checked new comparison operators.  Fixed a few by changing false condition to a simple JMP.
+
+      DOVAR need to DECT SP before pushing the TOS to make space. I don't understand why , but it works.
+
+
+Jan 22.. 2017
+
+      Got NEXT running again. Found I needed an extra SP DECT for DOVAR. WHY?
+      Move do loops top of rstack to allow use of RTWP for multi-tasking.
+
+      Built TMS9901 timer interface. Gives us "MS" Forth word. Yeah!
+      Using 'MS' we built TMS9919 sound chip interface. Works great!
+      I designed these words 10 years ago. This is my kind of Forth
+
+      Usage:
+         : BEEP  ( -- ) GEN1  1398 Hz  -4 dB  170 mS  MUTE ;
+
+      Built my "legendary" RTWP multi-tasker and a conventional Forth stack version.
+      RTWP is 3X faster!  Very cool.
+
+
+Jan 24 2017
+       BIG BUG in 2@  duh!
+       Did not incr TOS to get the second cell value!
+       One little '+' missing in the code below
+
+CODE: 2@     ( addr -- d)
+             *TOS W MOV,      ( should be:  *TOS+ W MOV,)
+             *TOS TOS MOV,
+              W PUSH,
+              NEXT,
+              END-CODE
+
+Jan 25 2017
+
+      Got NEXT running again. Found I needed an extra SP DECT for DOVAR. WHY?
+      Move do loops top of rstack to allow use of RTWP for multi-tasking.
+
+Note: Feb 2018: 
+	The extra SP DECT, instruction was not running, but the cross-compiler
+	has a memory hiccup. Replaced the instruction with 0000 DATA, and it still
+	works correcly. ???
+
+      Built TMS9901 timer interface. Gives us "MS" Forth word. Yeah!
+      Using 'MS' we built TMS9919 sound chip interface. Works great!
+      I designed these words 10 years ago. This is my kind of Forth
+
+      Usage:
+         : BEEP  ( -- ) GEN1  1398 Hz  -4 dB  170 mS  MUTE ;
+
+      Built my "legendary" RTWP multi-tasker and a conventional Forth stack version.
+      RTWP is 3X faster!  Very cool.
+
+------------------------------
+This was the point of the exercise: Finally!
+Benchmarked operators to see how TOS compares to using HS Ram for operators
+a la Turbo Forth.  TOS competes very well
+In both systems NEXT, EXIT, ENTER, ?BRANCH, BRANCH, LIT are in HS RAM.
+
+: NEGATE  MINUS ;    \ Oct 25, 2017 these words were needed for comparison with FB Forth
+: 2*   DUP + ;
+: 2/   1 SLA ;
+
+\ : 2*   DUP + ;
+\ : 2/   1 LSHIFT ;  \ to make it fair in CAMEL99 we need these
+\ : NEGATE  NEGATE ;
+
+
+HEX
+: OPTEST      \ mixed
+          3000 0                 \ *OPTIMIZATION METHOD*
+          DO                     \ CAMEL99    Turbo Forth
+                                 \ ----------------------
+               AAAA   ( lit)     \  HSRAM       HSRAM
+               DUP               \  TOS         HSRAM
+               SWAP              \  TOS         HSRAM
+               OVER              \  TOS         HSRAM
+               ROT               \  TOS         --
+               DROP              \  TOS         HSRAM
+               DUP AND           \  TOS         --
+               DUP OR            \  TOS         --
+               DUP XOR           \  TOS         --
+               1+                \  TOS         HSRAM
+               1-                \  TOS         HSRAM
+               CELL+  ( 2+ )     \  TOS         HSRAM
+               2-                \  TOS         HSRAM
+               2*                \  TOS         --
+               2/                \  TOS         --
+               NEGATE            \  TOS         --
+               ABS               \  TOS         --
+               +                 \  TOS         HSRAM
+               2*                \  TOS
+               DROP
+          LOOP  ;
+\                $3000 reps
+\ CAMEL99 ITC:   11.7
+\ CAMEL99 DTC:    9.1
+\ TurboForth     12.2
+\ FB Forth 2.0 is about 24% slower than CAMEL99
+
+
+
+
+ : OPTEST2  \ only HSRAM VS TOS
+          2000 0                 \ *OPTIMIZATION METHOD*
+          do                     \ CAMEL99    Turbo Forth
+                                 \ ----------------------
+               AAAA   ( lit)     \  HSRAM       HSRAM
+               DUP               \  TOS         HSRAM
+               SWAP              \  TOS         HSRAM
+               OVER              \  TOS         HSRAM
+               DUP AND           \  TOS         HSRAM
+               DUP OR            \  TOS         HSRAM
+               1+                \  TOS         HSRAM
+               1-                \  TOS         HSRAM
+               2+                \  TOS         HSRAM
+               2-                \  TOS         HSRAM
+               +                 \  TOS         HSRAM
+               2 *               \  TOS         HSRAM
+               DROP              \  TOS         HSRAM
+               DROP              \  TOS         HSRAM
+          LOOP  ;
+
+\ CAMEL99:   6.4 secs
+\ TurboForth 6.4 secs
+\ same
+\ -----------------------------
+
+HEX
+: OPTEST3   \  TOS versus conventional Parameter stack
+
+          3000 0                 \ *OPTIMIZATION METHOD*
+          DO                     \ CAMEL99    Turbo Forth
+                                 \ ----------------------
+              AAAA               \  HSRAM       HSRAM
+              BBBB               \  HSRAM       HSRAM
+              CCCC               \  HSRAM       HSRAM
+               ROT               \  TOS         --
+               AND               \  TOS         --
+               OR                \  TOS         --
+               DUP XOR           \  TOS         --
+               2*                \  TOS         --
+               2/                \  TOS         --
+               NEGATE            \  TOS         --
+               ABS               \  TOS         --
+               DROP
+          LOOP  ;
+
+\ CAMEL99 ITC:   7.3 secs     \ TOS 5.4% faster than TF
+\ CAMEL99 DTC:   5.8 secs     \ 33% faster than TF
+\ TurboForth :   7.7 secs
+
+\ ==============================================================
+\ UM* test. Speed of UM* swamped by speed of LIT and DROP
+HEX
+: TEST
+           FFFF 0
+           DO
+                1234           \  HSRAM       HSRAM    2X SLOWER with TOS
+                1234           \  HSRAM       HSRAM    2X SLOWER with TOS
+                UM*            \  TOS         --       2X faster with TOS
+                DROP           \  TOS         HSRAM    2X SLOWER with TOS
+                DROP           \  TOS         HSRAM    2X SLOWER with TOS
+           LOOP ;
+
+\ CAMEL99 ITC:  18.2 secs     17.7
+\ CAMEL99 DTC:  secs          14.3    25$ faster than TF
+
+\ TurboForth :  18.5 secs     17.9
+
+
+
+Feb 3 2017
+
+Build a "normal" version to truly see how much improvement there is with NEXT in PAD RAM.
+It's about 20% slower.
+
+I busted the system dictionary somehow.  Please put the reason in here when you find it Brian.
+
+Fault:  find cannot find anything before SOURCE  ('source not found) even when redefined as variable:
+Fault:  DOUSER is not calculating the correct user#  giving a value user+4 ???
+
+Feb 13 2017
+
+    Found it!  I changed 'source from a 2variable to VARIABLE by mistake.
+    As soon as a ran Interpret once,it clobber the link when it load 'SOURCE.
+
+    Back in business.
+    
+    
+June 6 2017
+
+Got the first code running in DTC.  Much faster and only slightly bigger,
+
+HEX
+: TEST  FFFF BEGIN 1- DUP 0= UNTIL DROP ;
+
+TurboForth    11.5  secs
+Camel99 ITC   10.6  sec
+Camel99 DTC    8.5  secs   35% faster
+
+==================================================
+July 18 2017
+
+We have moved to Kilworth.  Sitting among the boxes I have setup my Win 10 machine.
+Continued to find small improvements in the DTC primitives as my skill in assembler improves.
+
+
+\ ===============================================
+Aug 3 2017
+
+Finally got around to making a clean INLINE[ ]
+Forth CAMEL99
+
+HEX
+
+CODE F(X)  ( n -- )
+     INLINE[ DUP SWAP OVER ROT DROP DUP AND ]
+     INLINE[ DUP OR DUP XOR 1+ 1- 2+  2- 2* ]
+     INLINE[ 2/ NEGATE ABS + 2* DROP ]
+     NEXT,
+END-CODE
+
+
+: ILTEST      \ mixed
+          3000 0
+          DO
+             AAAA  F(X)
+          LOOP  ;
+
+\ ---------------------------------
+\ CAMEL99 ITC:   11.7
+\ CAMEL99 DTC:    9.1
+\ TurboForth     12.2
+\ CAMEL99 F(X)    4.9
+
+\ ===============================================
+Aug 28 2017
+
+I had never really tested LEAVE and found out I just implemented EXIT. duh.
+Reviewed CAMEL Forth code and found the LEAVE stack, >L , L> etc...
+Forgot about how to use my own cross-compiler and was trying to built
+ENDLOOP word after defining the TARGET looping words!  DUHHHH!
+
+Works now.  Renamed ENDLOOP to RAKE, cuz it rakes the leaves... :-)))
+
+Sept 10, 2017
+
+Finally added POSTPONE to CAMEL99.  Changed library files to use POSTPONE.
+
+\ =====================================================
+Sept 11 2017
+
+Reviewed FB Forth (Lee Stewart) DOES> implementation and saw that Lee used
+a BL instruction to call  DODOES.   Did it that way and it worked except it
+left a mystery address on the stack.  CHANGEd; IP PUSH, to IP RPUSH, to match
+the MSP430 Camel Forth code and it worked.  Still some mysterious things going
+on to me with this code but now we have DOES.
+
+Sept 12 2017
+Loaded HAYES TESTER to get a compliance of the CAMEL99 system. Found errors in LSHIFT and RSHIFT.
+Changed the assembler code to include a check for 0 shifts to get correct outputs per ANS/ISO Forth.
+
+1 0 LSHIFT -> 1   \ My version was outputting 0 because it was a pure SLA instruction.
+
+=======================================================
+Oct 25 2017
+
+Finally tried FB FORTH 2.0  It's so well documented.  Very nice.
+But the FIG Forth architecture is slower than CAMEL99
+
+HEX
+: TEST  FFFF BEGIN 1- DUP 0= UNTIL ;
+
+CAMEL99    11
+FB FORTH   12.5   +13%
+
+DECIMAL  \ 1M loops
+: INNER 1000 0 DO LOOP ;
+: OUTER 1000 0 DO  INNER  LOOP ;
+
+CAMEL99    50
+FB FORTH   64.4    +28%
+
+
+
+\ NOTE:
+\      In benchmark testing I have found that even though
+\      CAMEL99 UM* is almost 2X faster than TurboForth, the benchmark
+\      timings do NOT show a significant speed improvement.
+\      This is due to LIT and DROP being 2X slower with TOS cached.
+\      Pushing and refilling TOS register takes time.
+\      But overall we can see an average speed improvement of 8% of Forth words
+\      vs Turbo Forth, which is mostly ASM code and about 20% faster
+\      than FB Forth 2.0 (Fig Forth variant)
+
+
+\ Example:
+\           FFFF 0
+\           DO
+\                1234           \  HSRAM       HSRAM    2X SLOWER with TOS
+\                1234           \  HSRAM       HSRAM    2X SLOWER with TOS
+\                UM*            \  TOS         --       2X faster with TOS
+\                DROP           \  TOS         HSRAM    2X SLOWER with TOS
+\                DROP           \  TOS         HSRAM    2X SLOWER with TOS
+\           LOOP ;
+
+\        CAMEL99      18.2 seconds
+\        Turboforth   18.5 seconds
+
+Jan 4 2018
+
+Put the code up on Github late last year.  
+Broke the DTC version and have not fixed it yet.
+Interest is waning a little in working so much on this project, but its still
+fun.
+
+Created INLINE[ ] and ASM[ ] to make inline asm and inlined asm primitives inside 
+colon definitions. Takes up huge space. Needs to be used carefully.
+
+Modified a Snake game to work on Camel99
+
+Create a PONG game. My first ever. :-)
+
+=============================================================
+Feb 3 2018   Version 1.99
+
+Looking for space savings and effiency:
+
+KEY operation
+Replaced (KEY?) CODE word with a smaller version called KEY?
+Now WARM sets the correct value for KUNIT# on startup.  (I read the fine print on the matter)
+Default value is now 2 (BASIC keyboard)
+You can change the keyboard by setting byte variable KUNIT# TO 0,1 OR 2
+\ example:  1 KUNIT# C!
+
+Change to screen driver
+------------------------
+Kernel Changes:
+Removed VEMIT and <CR>
+
+Replaced with (EMIT) and (CR)
+Both of these words return a flag if we need to CR  or SCROLL respectively.
+Forth words CR and EMIT are greatly simplified now.
+
+NEW word:   WARM
+
+COLD does a cold boot and CALLs WARM.
+- WARM keeps the dictionary intact.
+
+
+Simplified ." (dot-quote) using ideas from Neil Baud.  Allowed the removal if ,"
+Comma-quote has been moved to the \lib folder if you need it.
+
+Dot quote now works in IMMEDIATE mode as well as compiling. 
+It is an evil state smart word now.
+Per above change I removed  the talking comment .( from the kernel and put it in \lib folder.
+This is allowed under Forth 2012 but not allowed under Forth 94.
+
+Changed machine code in DOES> to BRANCH to DODOES rather than BRANCH&LINK.
+This was an error that didn't seem to create a bug for me but it would consume
+return stack space needlessly.
+
+----------------------------
+GRAFIX2.HSF
+
+Added 1+ to COLORS word so that the colorset range you select works as expected.
+
+----------------------------
+CRU.HSF
+
+I now include a CRU wordset in the kernel.
+This allows implementation of SAMS 1Mbyte memory card words.
+See \CCLIB\CRU.HSF
+
+------------------
+SAMS card support
+See \DEMO\BANK.FTH  for examples of how to use SAMS card to create large arrays.
+
+-----------------
+SPRITES.FTH
+
+Removed motion table support. I tend to use direct control of sprites and I needed I would use
+the multi-tasker.  Added new words that directly control SPRITES in the VDP memory space.
+But retained the first system of keeping a mirror in CRU RAM that is updated all at once.
+SP.WRITE now replaces SP.SHOW to write the CPU ram table into VDP ram for all created sprites.
+
+See the source file for the new words.
+-----------------
+XFC99 CROSS-COMPILER CHANGES:
+
+Fixed problem with HEADLESS word so it works now.
+
+Used HEADLESS to remove ADR>IN word from searchable dictionary. 
+It is used by PARSE AND PARSE-NAME but is not useful by itself.
