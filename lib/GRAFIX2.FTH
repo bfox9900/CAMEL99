@@ -99,7 +99,7 @@ HEX
 : COLORS  ( set1 set2 fg bg  -- )
           1 ?MODE
           >COLR >R
-          SWAP ]CTAB SWAP ]CTAB OVER - R> VFILL ;
+          SWAP ]CTAB SWAP ]CTAB OVER - 1+ R> VFILL ;
 
 : SCREEN ( color -- )
          1 ?MODE                \ check for MODE 1
