@@ -134,12 +134,12 @@ CROSS-ASSEMBLING
 \ But there is only 256 bytes! (shame)
 \ Having these critical routines in fast memory makes more difference than ANY other improvements
 
-l: _exit      IP RPOP,       \ placing EXIT before next saves space and is faster  22+next=74 vs 84 in TF
-l: _next                     \ Forth ITC NEXT routine
-@@9:         *IP+ W MOV,     \ move CFA into Working register & incr IP          \ 22
-l: _exec     *W+ R5 MOV,     \ move contents of CFA to R5 & INCR W               \ 22
-             *R5  B,         \ branch to the address in R5                       \ 12
-                                                                               \ = 56
+l: _exit      IP RPOP,        \ placing EXIT before next saves space and is faster  22+next=74 vs 84 in TF
+l: _next                      \ Forth ITC NEXT routine
+@@9:         *IP+ W MOV,      \ move CFA into Working register & incr IP        \ 22
+l: _exec     *W+ R5 MOV,      \ move contents of CFA to R5 & INCR W             \ 22
+             *R5  B,          \ branch to the address in R5                     \ 12
+                                                                              \ = 56
 l: _?branch   \ Faster way to avoid penalty of TOS refill
               TOS DEC,        \ if tos<>0 this will cause a carry flag                                  10
               TOS POP,        \ refill TOS changes L> A> EQ flags, BUT does not change carry flag       22
@@ -221,11 +221,12 @@ CODE: DOCON   ( -- n )                             \ Executor that executes a "C
               END-CODE
 
 CODE: DOVAR   ( -- addr)                           \ Executor that executes a "VARIABLE"
-              SP DECT,
-              TOS PUSH,                            \ push TOS
+              0000 DATA,                           \ not sure why I need this extra cell ??
+              TOS PUSH,                            \ <- word enters at this address
               W   TOS MOV,                         \ put the parameter field address in TOS
               NEXT,
               END-CODE
+
 
 \ In CAMEL99 the WP register doubles as USER pointer
 CODE: DOUSER ( -- addr)
@@ -256,6 +257,7 @@ CODE: DODOES  ( -- a-addr)
               IP 4 ADDI,      \ skip BL instruction+address to get to Forth code
               NEXT,
               END-CODE
+
 
 CODE: EXECUTE ( xt -- )
               TOS W MOV,      \ move the execution token in TOS into temp
@@ -299,20 +301,12 @@ CODE: 2@     ( addr -- d)
               NEXT,                  \ 40
               END-CODE
 
-\ CODE: C!     ( c addr -- )
-\             *SP+  W MOV,            \ 22
-\              W SWPB,                \ 10
-\              W *TOS MOVB,           \ 18
-\              TOS POP,               \ 22
-\              NEXT,                  \ 72   same as Turbo Forth
-\              END-CODE
-
 CODE: C!     ( c addr -- )
              *SP SWPB,               \ 14
-             *SP *TOS MOVB,          \ 22
-              SP INCT,               \ 10
+             *SP *TOS MOVB,          \ 22   can't auto incr. It will only be by 1 with MOVB
+              SP INCT,               \ 10   inc. stack pointer by 2
               TOS POP,               \ 22
-              NEXT,                  \ 68   10% faster than Turbo Forth
+              NEXT,                  \ 68
               END-CODE
 
 CODE: COUNT  ( addr -- addr' u)
@@ -695,7 +689,7 @@ CODE: UM*     ( n n -- d)     \ 2 cells in -- 2 cells out
               NEXT,           \ 74 vs 132 in TF
               END-CODE
 
-CODE: *      ( n n -- n)      \ same size as  : *  UM* DROP ; but 4x faster
+CODE: *      ( n n -- n)      \ same size as  : *  UM* DROP ; but faster
              *SP+ R3 MOV,     \ 22
               TOS R3 MPY,     \ 52  cool trick !
               NEXT,           \ 74
@@ -792,33 +786,11 @@ CODE: MIN     ( n1 n2 -- n)
               NEXT,
 END-CODE   \ for MIN
 
-
-0 [if]
 \ ===================================================================
-CR .( C R U   I / O)
+CR .(  M O V E   C M O V E  C M O V E >   F I L L )
 
-\ This word writes one 8 bit byte to CRU , like PC! in intel Forths
-CODE: PC!     (  c CRUadr -- )
-              TOS R12 MOV,
-              TOS POP,       \ POP c into TOS
-              TOS 8 LDCR,    \ send 8 bits to CRUaddr
-              TOS POP,       \ refill TOS
-              NEXT,
-              END-CODE
-
-\ this word reads one 8 bit byte from IO address and places it on Forth stack
-CODE: PC@    ( CRUadr -- c)
-              TOS R12 MOV,
-              TOS 8  STCR,   \ READ 8 bits from CRU into TOS cache
-              NEXT,
-              END-CODE
-[then]
-
-\ ===================================================================
-CR .(  C M O V E  C M O V E >   F I L L )
-
-CODE: CMOVE   ( src dst n -- )  \ forward character move
-             *SP+ R0 MOV,       \ pop DEST into R0                           22
+CODE: CMOVE  ( src dst n -- )  \ forward character move
+@@8:         *SP+ R0 MOV,       \ pop DEST into R0                           22
              *SP+ R1 MOV,       \ pop source into R1                         22
               TOS TOS MOV,
               @@2 JEQ,          \ if n=0 get out
@@ -830,7 +802,7 @@ CODE: CMOVE   ( src dst n -- )  \ forward character move
               END-CODE
 
 CODE: CMOVE>  ( src dst n -- )  \ move chars from end of string and go backwards
-             *SP+ R0 MOV,       \ pop DEST into R0
+@@9:         *SP+ R0 MOV,       \ pop DEST into R0
              *SP+ R1 MOV,       \ pop source into R1
               TOS TOS MOV,
               @@2 JEQ,          \ if n=0 get out
@@ -919,10 +891,10 @@ CODE: <LOOP>
               END-CODE
 
 CODE: I       ( -- n)
-              TOS PUSH,         \ making space in TOS slows this down
-             *RP TOS MOV,
-              2 (RP) TOS SUB,   \ index = loopindex - fudge
-              NEXT,
+              TOS PUSH,         \ making space in TOS slows this down  28
+             *RP TOS MOV,                                          \   18
+              2 (RP) TOS SUB,   \ index = loopindex - fudge            22
+              NEXT,                                                \   68
               END-CODE
 
 CODE: J       ( -- n)
@@ -1255,10 +1227,9 @@ CODE: VWTR    ( n reg -- )             \ Usage: HEX 0705 VWTR {write 5 to regist
 \ ===================================================================
 \ T I - 9 9   S C R E E N   C O N T R O L  P R I M I T I V E S
 
-\ variables to manage screen position *MOVED TO EQU file*
 CROSS-ASSEMBLING
 
-
+\ *Variables to manage screen position *MOVED TO EQU file*
 \ Since FORTH variables are just addresses, it is simple to to link these
 \ addresses (ie Pointers) into the CAMEL 99 compiler.
 \ Later, in the FORTH code we define these labels as CONSTANTS: so they return
@@ -1266,76 +1237,77 @@ CROSS-ASSEMBLING
 \ Example:  _VROW CONSTANT: VROW        VROW now returns address _VROW to Forth
 \ See: CAMEL99.hsf
 
-
 \ These assembler routines manage the screen math at machine speed.
 \ They are smaller and faster in ASM while still easy to understand.
 \ Using these primitives and the VDP words CAMEL99 creates the rest of
 \ video screen control in Forth.
 
 \ CURSOR POSITION MANAGEMENT
-l: _VPOS   ( -- VDP-addr)             \ return current video position (screen address)
+ CODE: VPOS ( -- VDP-addr)   \ return current video position (screen address)
               TOS PUSH,               \ make some space
              _VROW @@ R3 MOV,
              _C/L  @@ R3 MPY,
              _VCOL @@ TOS ADD,        \ fetch _VCOL and add to TOS
-              RT,
-              END-CODE
-
-CODE: VPOS   _VPOS @@ BL,             \ call _VPOS to create a Forth word
               NEXT,
               END-CODE
 
-CODE: >VPOS ( col row -- vaddr)       \ compute vdp address from col,row
-              TOS    R3 MOV,
-             _C/L @@ R3 MPY,
-              *SP+   TOS ADD,         \ fetch _VCOL and add to TOS
+CODE: (CR)    ( -- ? )  \ return true if we need to SCROLL
+              TOS PUSH,
+              TOS CLR,
+             _OUT  @@ CLR,
+             _VCOL @@ CLR,
+             _VROW @@ INC,
+              W  _L/SCR LI,
+             _VROW @@ W CMP,
+              EQ IF,
+                  TOS SETO,
+              ENDIF,
               NEXT,
               END-CODE
 
-\ sub-routine CR common factor
-l: _CR       _VROW @@ INC,            \ INC. row counter
-             _VCOL @@ CLR,            \ reset/track the video column
-             _OUT @@ CLR,             \ OUT counts chars on current line
-              RT,
-
-CODE: <CR>   ( -- )                   \ calculate the new cursor position for a carriage return
-             _CR @@ BL,
-              NEXT,
-              END-CODE
-
-CODE: VEMIT  ( char -- ? )  \ FORTH equiv: VPOS VC!  1 VCOL +! ;  ASM Takes 2 extra bytes but faster
-             _VPOS @@ BL,               \ calc. video address fromr row,col
-              TOS R0 MOV,               \ move video address into R0
-              WMODE @@ BL,              \ branch to setup VDP write address
-             *SP+ TOS MOV,              \ mov char to TOS register
+ CODE: (EMIT) ( char -- ?)  \ (emit) returns true if we need to goto newline
+             _VROW @@ R1 MOV,
+             _C/L  @@ R1 MPY,
+             _VCOL @@ R2 ADD,           \ fetch _VCOL and add to R0
+              R2 R0 MOV,
+              WMODE @@ BL,              \ call: setup VDP address in "write mode"
               TOS SWPB,
               TOS VDPWD @@ MOVB,        \ write char to vdp data port
-             _OUT  @@ INC,              \ count the character
-             _VCOL @@ INC,
-             _VCOL @@ _C/L @@ CMP,      \ check for end of line
-              @@1 JNE,                  \ if VCOL < C/L , jump out
-             _CR @@ BL,                 \ do CR updates to screen variables
-@@1:          TOS POP,                  \ refill TOS
+             _OUT  @@ INC,              \ count chars since last Carriage return
+             _VCOL @@ INC,              \ advance the column variable
+
+              TOS CLR,                  \ clear TOS. It' the output flag
+             _C/L @@  _VCOL @@ CMP,     \ compare column variable to chars per line
+              EQ IF,
+                  TOS SETO,             \ set TOS to true, we need a new line
+              ENDIF,
               NEXT,
               END-CODE
 
-CODE: C/L@   ( -- n )                  \ this is used 7 times in the KERNEL. saves 14 bytes
-             TOS PUSH,                 \ and is 5 times faster than C/L @
+
+
+\ FAST variable for screen driver
+CODE: C/L@   ( -- n )                  \ this is used 8 times in the KERNEL. Saves 14 bytes
+             TOS PUSH,                 \ and is 50% faster than C/L @
             _C/L @@ TOS MOV,
              NEXT,
              END-CODE
 
+\ CODE: VROW@  ( -- n ) TOS PUSH,   _VROW @@ TOS MOV,   NEXT, END-CODE   \  8 bytes, too big
+\ CODE: VCOL@  ( -- n ) TOS PUSH,   _VCOL @@ TOS MOV,   NEXT, END-CODE   \  8 bytes
+
+
 \ make VCHAR go faster \ clip vertical value in VCHAR
-CODE: VCLIP   ( lim char addr -- lim char addr)
+CODE: VCLIP  ( lim char addr -- lim char addr)
              TOS  2 (SP) CMP,
              @@1 JLE,
              2 (SP)  TOS SUB,
 @@1:         NEXT,
              END-CODE
 
-\ high speed routines to support SPRITES
+\ high speed routine to support SPRITES
 CROSS-ASSEMBLING
-CODE: DXY ( x2 y2 x1 y1 --- x^2 y^2 )  \ use by SP.DIST
+CODE: DXY  ( x2 y2 x1 y1 --- x^2 y^2 )  \ use by SP.DIST
             *SP+ R0 MOV,      \ pop x1->R0
             *SP+ TOS SUB,     \ pop y1-y2->tos
             *SP  R0 SUB,      \ x1-x2->R0, keep stack location
@@ -1347,47 +1319,22 @@ CODE: DXY ( x2 y2 x1 y1 --- x^2 y^2 )  \ use by SP.DIST
              NEXT,            \ 16 bytes
              END-CODE
 
-\ V 1.98: Used Forth code for these in SPRITES.FTH to save kernel space
-\ CODE: VECT+ ( x y dx dy -- yyxx )  \ Compute new sprite location
-\            *SP+ R0 MOV,     \ vx->R0
-\            *SP+ TOS ADD,    \ y + dy ->TOS
-\            *SP+ R0  ADD,    \ x + dx ->RO
-\             TOS SWPB,
-\             R0 TOS ADD,     \ FUSE bytes into 16 bit XY sprite location
-\             NEXT,
-\             END-CODE
-
-\ CODE: @+!   ( addr addr2 -- ) \ fetch value & add to value in addr2
-\            *SP+ R1 MOV,
-\            *R1 *TOS ADD,
-\             TOS POP,
-\             NEXT,
-\             END-CODE
-
-\ CODE: 2(X^2) ( x -- x')
-\             TOS R3 MOV,     \ dup X
-\             TOS R3 MPY,     \ X * X ->R4 (TOS = X^2)
-\             TOS TOS ADD,    \ faster to add for 2 times
-\             NEXT,
-\             END-CODE
-
 \ ===================================================================
-CR .( KEY? )
+CR .( KEY?  and  ?TERMINAL)
 
-\ Camel99 interface to KSCAN
-CODE: (KEY?) ( key-unit -- ?)  \ *WARNING* it takes 1200 uS for key scan to run
-             TOS R3 MOV,
+\ Camel99 interface to KSCAN. 
+\ We used the ROM routine to test if a KEY was pressed only.
+\ We read the character value from RAM with Forth code.
+CODE: KEY? ( -- ?)  \ *WARNING* it takes 1.15 mS for KEY? scan to run
+             TOS PUSH,
              TOS CLR,                   \ TOS will be our true/false flag
-             R3 8374 @@ MOVB,           \ set the key-unit# (see TI BASIC Ref. pg II-87)
              0 LIMI,                    \ stop interrupts
              83E0 LWPI,                 \ switch to GPL workspace
              000E @@ BL,                \ call ROM keyboard scanning routine
              8300 LWPI,                 \ return to Forth's workspace , interrupts are restored
-             2 LIMI,
-             837C @@ R0 MOVB,           \ read GPL status byte
-             R0 2000 ANDI,              \ mask for key-pressed bit
-             @@1 JEQ,
-             TOS SETO,                  \ Key pressed: set flag to true
+\             2 LIMI,                   \ interupts are enabled with every char. output
+             837C @@ TOS MOVB,          \ read GPL status byte
+             TOS 2000 ANDI,             \ mask key-pressed bit. TRUE = >2000
              SCRTO @@ CLR,              \ clear screen timeout
 @@1:         NEXT,                      \ return
              END-CODE
@@ -1401,7 +1348,7 @@ CODE: ?TERMINAL ( -- ?)    \ 170uS, 16 bit ROM speed. Same name as TI-Forth
             TOS      CLR,
             0020 @@  BL,          \ Call ROM code, test FNCT 4 key press
             @@1      JNE,         \ if not pressed get out
-            TOS      SETO,        
+            TOS      SETO,
 @@1:        NEXT,                 \ **R12 will be modified now**
             END-CODE
 
@@ -1422,8 +1369,7 @@ CODE: BYE    ( -- )
             0000 @@ BLWP,             \ ROM reset vector is at 0000
             END-CODE
 
-\ : >DIGIT  DUP 9 > 7 AND + 30 + ;    
-\ ASM is 2 bytes smaller 4X faster
+\ : >DIGIT  DUP 9 > 7 AND + 30 + ;    \ ASM is 2 bytes smaller 4X faster
 CODE: >DIGIT  ( n -- c)               \ convert n to ascii digit c
             TOS 9 CMPI,
             @@1 JLE,                  \ if n<=9 jump to convert it
