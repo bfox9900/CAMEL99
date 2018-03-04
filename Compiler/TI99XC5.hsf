@@ -327,17 +327,12 @@ VARIABLE XLATEST   0 XLATEST !              \ holds the address of latest WORD c
 \ parameter field      list of addresses to interpret
 
 
-: $HEADER       ( c-addr -- )               \ create a Camel Forth word structure in TARGET memory
-                TAlign                      \ move target dictionary pointer (TDP) to an even cell address
-                xlatest @ link,             \ populate this link field with the NFA of the last defined word.
-                0 immed,                    \ create the immediate byte field. Initialize to zero
-                THERE XLATEST !             \ THERE now points to the NFA. Update XLATEST variable
-                dup upper name,  ;          \ dup c-addr and convert to uppercase and compile into TARGET mem.
-
-: $NOHEAD      ( c-addr -- )               \ create a Camel Forth word structure in TARGET memory
-                TAlign                      \ move target dictionary pointer (TDP) to an even cell address
-                DROP  ;                     \ we don't need this string
-
+: $HEADER       ( c-addr -- )              \ create a Camel Forth word structure in TARGET memory
+                TAlign                     \ move target dictionary pointer (TDP) to an even cell address
+                xlatest @ link,            \ populate this link field with the NFA of the last defined word.
+                0 immed,                   \ create the immediate byte field. Initialize to zero
+                THERE XLATEST !            \ THERE now points to the NFA. Update XLATEST variable
+                dup upper name,  ;         \ dup c-addr and convert to uppercase and compile into TARGET mem.
 
 \ ========================================================================
 \ W O R D   C O U N T I N G   V A R I A B L E S
@@ -347,16 +342,8 @@ VARIABLE XLATEST   0 XLATEST !              \ holds the address of latest WORD c
 VARIABLE TFORTHWORDS          \ COUNT of High level Forth words
 
 
-\ FUTURE:  add a HIDE & REVEAL words to create cross-compiler words with NO TARGET header.
-\          This will save some space when needed.
-
-\ HIDE : FOO    bla bla ;   \ FOO name will be in MIRROR but not in TARGET
-                            \ but code will be in the TARGET and can be used
 VARIABLE HIDDEN
-
-: THEADER    ( -- )  HIDDEN @ IF  $NOHEAD else $HEADER  THEN ;
-
-\ compiler directives to control headers in Target
+\ cross-compiler directives to control headers in Target
 :  HEADLESS      HIDDEN ON ;
 :  HEADS         HIDDEN OFF ;
 
@@ -365,10 +352,25 @@ VARIABLE HIDDEN
 \ Cross-compiler "CREATE" primitive creates a word in CURRENT HOST vocabulary AND...
 \ then duplicates the same label in the TARGET system memory image
 : TCREATE:  ( -- )
-                CREATE                      \ create a new word in the Host MIRROR vocabulary
-                LASTWORD$ THEADER           \ make the header in the TARGET Forth space, with or without names
-                xlatest @  ,                \ compile the TARGET Forth words NFA in the MIRROR version (in the HOST Forth)
-                tforthwords 1+!             \ count this new word for COMPILER reporting
+               HIDDEN @ 0= 
+               IF   ( normal word creation)
+                  CREATE                     \ create a new word in the Host MIRROR vocabulary
+                  LASTWORD$ $HEADER          \ make the header in the TARGET Forth space
+                  xlatest @  ,               \ compile the TARGET Forth words NFA in the MIRROR version (in the HOST Forth)
+                  tforthwords 1+!            \ count this new word for COMPILER reporting
+
+               ELSE  ( HEADLESS word creation)
+                  CREATE                     \ create a new word in the Host MIRROR vocabulary
+
+                  TAlign
+                  xlatest @ link,            \ populate this link field with the NFA of the last defined word.
+                  0 immed,                   \ create the immediate byte field. Initialize to zero
+                  THERE                      \ THERE now points to the NFA.
+                  0 tc,                      \ compile and empty name field
+
+                  DUP ,         \ compile xlatest NFA into MIRROR word definition
+                  XLATEST !     \ Update XLATEST variable
+               THEN
 ;
 
 ?STK
@@ -763,7 +765,8 @@ HEX 40 CONSTANT host-immbit                                \ mask for HsForth im
 
 : HsFIND83      ( $ --  HOST-pfa immbits ? or 0 )
 \ Cross-compiler FIND uses HsForth Forth83 search order (only also etc...)
-\ Returns: hsForth pfa, immbits, flag.   *PAY ATTENTION* this is HOST FORTH searching the MIRROR vocab
+\ Returns: hsForth pfa, immbits, flag.   
+\ *** PAY ATTENTION ***  this is HOST FORTH searching the MIRROR vocabulary for TARGET words
                 find-buffer $!
                 find-buffer DUP UPPER $find-83 ;
 
@@ -826,9 +829,9 @@ CROSS-COMPILING
 : T[CHAR]       ( -- )    ?XCOMP TCHAR [COMPILE] TLITERAL ;  IMMEDIATE
 
 : TNUMBER,      ( D -- )
-                D>S                                       \ convert to a single number. (we will deal with doubles later)
-                Xstate T@                                 \ are we target compiling??
-                if    'LIT  t, ( n ) t,                   \ yes so compile literal and the number into target memory
+                D>S                        \ convert to a single number. (we will deal with doubles later)
+                Xstate T@                  \ are we target compiling??
+                if    'LIT  t, ( n ) t,    \ yes so compile LIT address and the number into target memory
                 then ;
 \ ============================================================================
 \ M A G I C   S T U F F:  C R O S S - C O M P I L E R  [']
@@ -841,12 +844,14 @@ CROSS-COMPILING
 
 : CC[']        ( -- <name>)
                T'
-               POSTPONE LITERAL             \ compile the XT as literal in the HOST memory
-               POSTPONE T, ;  IMMEDIATE     \ later, compile the XT in the TARGET memory
+               POSTPONE LITERAL           \ compile the XT as literal in the HOST memory
+               POSTPONE T, ;  IMMEDIATE   \ later, compile the XT in the TARGET memory
+
+SYNONYM TCOMPILE  CC[']  IMMEDIATE        \ took me awhile to realize this was really tcompile :-)
 
 \ ============================================================================
 \ T A R G E T   C O M P I L I N G  [']
-\ look up the word, compile into TARGET as a literal
+\ look up the word, compile into TARGET as a TARGET literal
 
 : T[']         ( -- <name>)
                ?XCOMP
@@ -854,13 +859,13 @@ CROSS-COMPILING
                'LIT T,  T,                \ store the address as a literal in the TARGET space
                ; IMMEDIATE
 
-
 \ =========================================================================
 \ C R O S S - C O M P I L E R  /  I N T E R P R E T E R
 
-
 : TINTERPRET     ( <word> )
-                BEGIN  BL WORD DUP LEN 0> WHILE
+                BEGIN  
+                  BL WORD DUP LEN 0>
+                WHILE
                 HsFIND83 ( HOST-PFA HOST-immbit ? | 0 )   \ HsFIND83 returns the pfa and also the immediate flag
                 IF ( -- host-pfa immbits )                \ we found the word in the dictionary.
                      immediate?                           \ is the HOST word immediate
@@ -874,13 +879,11 @@ CROSS-COMPILING
                                                           \ so fetch the Target NFA, convert to TARGET CFA and compile it
                      THEN
                 ELSE
-                  find-buffer NUMBER?
-                  IF   TNUMBER,                            \ converted ok
-                  ELSE find-buffer $.  CR
-                       true abort" Cross-compiler: Not Recognized"
-                  THEN
-
-\                  find-buffer >NUMBER TNUMBER,            \ it is a number so compile it into TARGET memory
+                    find-buffer NUMBER?
+                    IF   TNUMBER,                         \ converted ok so deal with the number
+                    ELSE find-buffer $.  CR
+                         true abort" Cross-compiler: Not Recognized"
+                    THEN
                 THEN
                 REPEAT
                 DROP ;
@@ -912,7 +915,7 @@ CR
 
 \                         CROSS COMPILER ENDS
 \ ============================================================================
-
+\
 \ now we load the cross-assembler
 
 include CC9900\COMPILER\ASM99005.HSF

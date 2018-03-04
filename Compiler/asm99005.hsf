@@ -1,7 +1,7 @@
 \               _____  __  __   ___    ___    ___    ___
 \       /\     / ____||  \/  | / _ \  / _ \  / _ \  / _ \
 \      /  \   | (___  | \  / || (_) || (_) || | | || | | |
-\     / /\ \   \___ \ | |\/| | \__, | \__, || | | || | | |
+\     / /\ \   \___ \ | |\/| | \__, | \__, || | | || | | | 
 \    / ____ \  ____) || |  | |   / /    / / | |_| || |_| |
 \   /_/    \_\|_____/ |_|  |_|  /_/    /_/   \___/  \___/
 \
@@ -582,7 +582,7 @@ jmptab-size cells BUFFER: BIND
 
 : cruop:
     create ,
-    does> @ swap 000f and 40 * + format6, ;
+    does> @ swap 000F and 6 lshift ( 40 *) + format6, ;  \ change 40 * to lshift
 
 3000 cruop: LDCR,
 3400 cruop: STCR,
@@ -796,7 +796,7 @@ VARIABLE org-addr         \ holds the TI-99 address that the code is loaded to
 HEX 86 constant header-size     \ TI-99 E/A5 file header size
   A000 VALUE LOADADDRESS        \ TI-99 EA5 will always load at this address for now.
 
-: header@   ( -- Taddr ) org-addr @ header-size - ; \ addr of start of program header
+: header@   ( -- Taddr ) org-addr@ header-size - ; \ addr of start of program header
 
 \ rel>adr computes the relocated address that is used in the loaded memory image.
 \ addresses are relative to the header size so we subtract it
@@ -1030,7 +1030,7 @@ HEX
 : TI-99.EA5  ( -- )
         orgflag @ 0= ABORT" missing ORIGIN. directive"            \ ORIGIN. directive MUST precede this directive to set the load address
         header@ DUP  header-size 0 tfill                          \ init header memory with zero
-        ( -- addr )0A BL TFILL  0A TALLOT                         \ FILL space for the file name with blanks (for debugging)
+        ( -- addr ) 0A BL TFILL  0A TALLOT                        \ FILL space for the file name with blanks (for debugging)
 
         0000 T,                                                   \ lay in some data after the FILENAME
         0100 T,                                                   \ don't know what these numbers do...?
@@ -1055,7 +1055,7 @@ HEX
 : FILENAME:  BL WORD DUP file!                                     \ added to version 5 Jan2 2017
              FILENAME$ $! ;                                        \ make a copy of the string
 
-: PROGRAM:            \ *new*  program: can declare the file name. DOES NOTHING IF NO NAME PROVIDE
+: PROGRAM:            \ *new*  program: can declare the file name. DOES NOTHING IF NO NAME PROVIDED
           BL WORD DUP LEN 0>
           IF DUP FILE!  FILENAME$ $! THEN
          .EVEN
@@ -1136,6 +1136,5 @@ SAVE-EXE XFC99.EXE  CR ." XFC99 TI-99 Forth Cross Compiler for DOS, V1.1 2018"  
 CR
 CR
 BYE
-
 
 
