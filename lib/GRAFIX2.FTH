@@ -135,13 +135,13 @@ HEX
 ( ** NOTE: for HCHAR & VCHAR you must give the number of repetitions )
 : HCHAR  ( col row char cnt -- ) \ parameter order not ideal so we shuffle
           SWAP >R >R         \ swap char & cnt, push to return stack
-          >VPOS              \ -- vadr )
+          C/L@ * +           \ -- vadr )
           R>  2DUP + ?SCR    \ bring back count add to Vadr and see if it's too many
           R>  VFILL ;        \ bring back char and FILL Video memory
 
 : VCHAR  ( col row char cnt -- ) \ parameter order not ideal so we shuffle
           2>R                \ ( -- x y )  push char & cnt to rstack
-          >VPOS              \ ( -- vdpaddr) calc the Video position in memory
+          C/L@ * +           \ ( -- vdpaddr) calc the Video position in memory
           C/SCR @ 1- SWAP    \ ( -- lim vdpaddr) End of screen - 1, is the Video Limit
           R> SWAP            \ ( -- lim char vadr) get the char and reverse order
           R> 0               \ ( -- lim char vadr cnt index) all that crap to get this
