@@ -1,4 +1,4 @@
-README
+#README
 
 ##CAMEL99 BINARY FILES
 
@@ -21,3 +21,8 @@ compiled in the binary.
 
 V1.99 also incorporates some changes in the program to make use of Forth 2012 thinking that
 made the final program smaller. A few bytes here and there never hurts.
+
+### Updates to V1.99  
+It's polite but I had to do a lot of space saving to be able to load new CRU words and GRAFIX2 into the 8K kernel.
+So it's done. This version uses a new simplified VDP driver and a simplified KEY? word.
+Be sure to try BANK.FTH to explore the SAMS memory (940K available) under Classic99 emulator.
