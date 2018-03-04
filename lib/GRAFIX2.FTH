@@ -51,8 +51,6 @@ HEX
 ( test for legal values, and combine into 1 byte)
 : >COLR ( fg bg -- byte) 1- ?COLOR SWAP 1- ?COLOR  04 LSHIFT + ;
 
-\ : >VPOS ( col row -- VPOS)  C/L@ * + ;  \ moved to CODE word
-
 ( =============================================================)
 ( T I - B A S I C   S U B - P R O G R A M S   B E G I N )
 
