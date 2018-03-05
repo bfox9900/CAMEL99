@@ -315,6 +315,9 @@ left a mystery address on the stack.  CHANGEd; IP PUSH, to IP RPUSH, to match
 the MSP430 Camel Forth code and it worked.  Still some mysterious things going
 on to me with this code but now we have DOES.
 
+MARCH 5 2018 UPDATE: change BL, instruction to B, (branch) works correctly. DUH!
+	             There is not an RT, at the end of DODOES. Just NEXT, 
+
 Sept 12 2017
 Loaded HAYES TESTER to get a compliance of the CAMEL99 system. Found errors in LSHIFT and RSHIFT.
 Changed the assembler code to include a check for 0 shifts to get correct outputs per ANS/ISO Forth.
