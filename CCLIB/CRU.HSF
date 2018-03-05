@@ -42,8 +42,8 @@ CODE: TB ( c -- ? )
          NEXT,
          END-CODE
 
-\ CAMEL99 simplifies CRU access by reading and writing 8 bits
-\ at a time.
+\ simplify common CRU operation by reading/writing 8 bits at a time.
+\ This is a common word in Intel PC Forths for I/O 
 
 \ write 8 bits to IO address set by CRU!
 CODE: PC!    (  c  -- )
@@ -80,7 +80,7 @@ CODE: LDCR ( n1 n2 -- )
          END-CODE
 
 0 [IF]
-CODE: STCR ( n1 --- n2 )
+CODE: STCR ( n1 --- n2 )  Not tested!! Looks wrong
 \ Performs the TMS9900 STCR instruction. The bit count is n1.
 \ The CRU base is set first with CRU! The returned value is n2.
          TOS R1 MOV,   \ bit count->R1
