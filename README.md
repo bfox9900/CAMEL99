@@ -66,12 +66,12 @@ Jan 26, 2018
  - TINYHEAP.FTH fixes to a simple ALLOCATE,FREE,RESIZE implementation
  
  Jan 29, 2018
-  - Added non-standard MALLOC and FREE to provide minimal HEAP management
-  - re-wrote SCROLL to use MALLOC and FREE.  
+  - Added non-standard MALLOC and MFREE to provide minimal HEAP management
+  - re-wrote SCROLL to use MALLOC and MFREE to temporarily allocate full screen size buffer. 
   - Wrote a new SCROLL that uses a 1 line buffer (C/L@ MALLOC) BECAUSE: 80 column mode used a 1920 byte buffer!
-    - new SCROLL is smaller 6 bytes and takes only 1 line of heap memory but 12% slower.
+    - new SCROLL is 10 bytes bigger 6 bytes but allocates only 1 line of heap memory. It is 20% slower than big buffer version.
     - also new scroll is more multi-tasking friendly
-    - old faster scroll is still selectable with conditional compile control.
+    - old faster scroll selectable with conditional compile control.
 Jan 31 2018
    - change TICKTOCK.HSF file to use the "JIFF" as the basic time unit
      This is 16.66 MS so while it is counting the cooperative tasker
@@ -103,7 +103,7 @@ Select "Option 5":  "RUN PROGRAM FILE"
 Type:  DSK1.CAMEL99   ( or KERNEL99  or MULTICAM )
 
 
-Graphics Support:
+### Graphics Support:
 The existing version of CAMEL99 also includes the GRAFIX2.HSF source code which provides common features of TI BASIC (VCHAR, HCHAR, GCHAR CLEAR etc.)that relate the TI-99 display chip, the TMS9918.  The graphics and string extensions make a Forth system that is a little more familiar to the TI BASIC programmer however it is still Forth and not BASIC. You are warned.
 
 ### File extensions
@@ -124,21 +124,21 @@ This first file is 9900FAST.HSF which contains the "primitive" words of the Fort
 
 The second file is CAMEL99.HSF.  This file contains the rest of the sytem that is written in Forth. 
 
-At the beginning of CAMEL99.HSF there is a include statement to compile BRCHLOOP.HSF. This file builds the final pieces of the cross compiler to allow it to make IF ELSE THEN, BEGIN UNTIL etc.. and it also creates the CROSS COMPILING versions of ':' and ';'.
+At the beginning of CAMEL99.HSF there is a include statement to compile BOOTSTRAP.HSF. This file builds the final pieces of the cross compiler to allow it to make IF ELSE THEN, BEGIN UNTIL etc.. and it also creates the CROSS COMPILING versions of ':' and ';'.
 
 The routines in CAMEL99.HSF create the TI-99 Forth interpreter and compiler. It also provides the system with I/O hooks to the Video Display Peripheral (VDP) chip that TI-99 uses for it's terminal screen in the form of Forth's EMIT TYPE word.
 
-The keyboard scanning code that is in the TI-99 ROMs is called by one CODE word KEY? which only returns TRUE or FALSE.  The rest of the keyboard interface is in Forth.
+The keyboard scanning code that is in the TI-99 ROMs is called by one CODE word KEY? which only returns TRUE or FALSE.  The rest of the keyboard interface is in Forth. A small ASM word called CURS@ returns the cursor character or a space character depending on the value in the TI-99 interrupt timer.  This greatly simplified implementing a flashing cursor. (See: KEY in CAMEL99.HSF)
 
 There is one "CODE" word (a word written in Forth Assembler) in CAMEL99.HSF. It is called INIT and sets up the CPU to become a Forth Virtual machine. INIT also copies a few important pieces of code into the high speed memory of the TI-99. This improves the speed of the system by about 20%.  
 
-The other files are features you can add the core system to explore the TI-99 or CAMEL99 itself.
+The other files are features you can add to the core system to explore the TI-99 or CAMEL99 itself.
 
 *WARNING* The binary code image file cannot be bigger than 8192 bytes at this time.  The compiler will ABORT at the end 
 of the build cycle and report that the memory is image is greater than 8192 bytes.
 
 - See the comment \ ADDONS in CAMEL99.HSF to see how to include CCLIB/ files
-Including TOOLS.HSF and GRAFIX2.HSF fills it up to capacity.
+Including CRU.HSF, TOOLS.HSF and GRAFIX2.HSF creates a binary file that is near the maximum size.
 
 This system is a work in progress by a hobbyist so you will no doubt find numerous errors and places for impovement. That is all good.
 
