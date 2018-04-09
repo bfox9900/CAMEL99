@@ -3,7 +3,7 @@
 
 \ multi-tasker tools
 : PULSE  ( -- n)  \ returns round robin transit time
-         ~@ PAUSE ~@ - ABS ;   ( ~@ reads 9901 timer)
+         TMR@ PAUSE TMR@ - ABS ;   ( TMR@ reads 9901 timer)
 
 : .AWAKE        ( ? -- ) IF ." awake"  ELSE ." sleep"  THEN ;
 
