@@ -4,6 +4,8 @@ Camel Forth V1.9 for the TI-99
 
 ## This project has been superseded by CAMEL99 V2  BF Apr 9 2018
 
+https://github.com/bfox9900/CAMEL99-V2
+
 ### ABOUT CAMEL99
 -------------
 CAMEL99 Forth has been built as an educational tool for those who are interested in how you could cross-compile Forth to a different CPU using an existing Forth system. Rather than starting from scratch it uses CAMEL Forth by Dr. Brad Rodriguez for the hi-level Forth code. This has been "tweeked" and dare I say improved a little to better fit the very slow TI-99 computer. (More things written in Assembler was the answer)
